@@ -35,6 +35,22 @@ create table user_roles (
   primary key (user_id, role)
 );
 
+-- is_admin() runs with owner privileges (security definer) to avoid
+-- infinite recursion when policies on other tables check user_roles.
+create schema if not exists private;
+
+create or replace function private.is_admin()
+returns boolean
+language sql
+security definer
+stable
+as $$
+  select exists (
+    select 1 from user_roles
+    where user_id = (select auth.uid()) and role = 'admin'
+  );
+$$;
+
 -- RLS: category
 alter table category enable row level security;
 
@@ -43,10 +59,7 @@ create policy "public can read categories" on category
 
 create policy "admins can write categories" on category
   for all using (
-    exists (
-      select 1 from user_roles
-      where user_id = (select auth.uid()) and role = 'admin'
-    )
+    private.is_admin()
   );
 
 -- RLS: post
@@ -57,10 +70,7 @@ create policy "public can read posts" on post
 
 create policy "admins can write posts" on post
   for all using (
-    exists (
-      select 1 from user_roles
-      where user_id = (select auth.uid()) and role = 'admin'
-    )
+    private.is_admin()
   );
 
 -- RLS: tag
@@ -71,10 +81,7 @@ create policy "public can read tags" on tag
 
 create policy "admins can write tags" on tag
   for all using (
-    exists (
-      select 1 from user_roles
-      where user_id = (select auth.uid()) and role = 'admin'
-    )
+    private.is_admin()
   );
 
 -- RLS: post_tag_mapping
@@ -85,19 +92,14 @@ create policy "public can read post_tag_mapping" on post_tag_mapping
 
 create policy "admins can write post_tag_mapping" on post_tag_mapping
   for all using (
-    exists (
-      select 1 from user_roles
-      where user_id = (select auth.uid()) and role = 'admin'
-    )
+    private.is_admin()
   );
 
--- RLS: user_roles (only admins can manage roles)
+-- RLS: user_roles
 alter table user_roles enable row level security;
 
-create policy "admins can manage user_roles" on user_roles
-  for all using (
-    exists (
-      select 1 from user_roles
-      where user_id = (select auth.uid()) and role = 'admin'
-    )
-  );
+create policy "users can read own role" on user_roles
+  for select using ((select auth.uid()) = user_id);
+
+create policy "admins can write user_roles" on user_roles
+  for all using (private.is_admin());

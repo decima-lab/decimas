@@ -6,12 +6,10 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
 export const createClient = (request: NextRequest) => {
   let supabaseResponse = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
+    request: { headers: request.headers },
   });
 
-  const _supabase = createServerClient(supabaseUrl ?? "", supabaseKey ?? "", {
+  const supabase = createServerClient(supabaseUrl ?? "", supabaseKey ?? "", {
     cookies: {
       getAll() {
         return request.cookies.getAll();
@@ -28,5 +26,5 @@ export const createClient = (request: NextRequest) => {
     },
   });
 
-  return supabaseResponse;
+  return { supabase, supabaseResponse };
 };
