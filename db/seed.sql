@@ -171,3 +171,8 @@ insert into post_tag_mapping (post_id, tag_id) values
   ('c1000000-0000-0000-0000-000000000010', 'b1000000-0000-0000-0000-000000000006'),
   ('c1000000-0000-0000-0000-000000000010', 'b1000000-0000-0000-0000-000000000009')
 on conflict do nothing;
+
+-- Admin user (project-specific — update UUID when setting up a new environment)
+insert into user_roles (user_id, role) values
+  ('900fbe1b-f478-4dbb-b32c-eec8d861fbe8', 'admin')
+on conflict do nothing;

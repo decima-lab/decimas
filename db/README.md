@@ -16,7 +16,7 @@ Your project ref is in the Supabase dashboard under **Project Settings → Gener
 ### Option A — Run SQL directly
 
 ```bash
-npx supabase db query --linked < db/schema.sql
+npx supabase db query --linked -f db/schema.sql
 ```
 
 ### Option B — Push as a migration
@@ -57,13 +57,13 @@ Rules to follow:
 `db/seed.sql` contains 10 sample posts with categories and tags. It is idempotent — safe to run multiple times.
 
 ```bash
-npx supabase db query --linked < db/seed.sql
+npx supabase db query --linked -f db/seed.sql
 ```
 
 To reset and re-seed from scratch, truncate first:
 
 ```bash
-npx supabase db query --linked --sql "truncate post_tag_mapping, post, tag, category restart identity cascade;"
+npx supabase db query --linked "truncate post_tag_mapping, post, tag, category restart identity cascade;"
 ```
 
 Then re-run the seed command above.
