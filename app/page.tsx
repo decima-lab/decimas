@@ -1,5 +1,11 @@
+<<<<<<< Updated upstream
 import { createClient } from "../utils/supabase/server";
 import { cookies } from "next/headers";
+=======
+import { cookies } from "next/headers";
+import Image from "next/image";
+import { createClient } from "../utils/supabase/server";
+>>>>>>> Stashed changes
 
 export async function Page() {
   const cookieStore = await cookies();
