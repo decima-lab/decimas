@@ -1,21 +1,4 @@
-import { cookies } from "next/headers";
-import Image from "next/image";
-import { createClient } from "../utils/supabase/server";
-
-export async function Page() {
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
-
-  const { data: todos } = await supabase.from("todos").select();
-
-  return (
-    <ul>
-      {todos?.map((todo) => (
-        <li key={todo.id}>{todo.name}</li>
-      ))}
-    </ul>
-  );
-}
+import PostsViewer from "./components/PostsViewer";
 
 export default function Home() {
   return (
@@ -29,6 +12,7 @@ export default function Home() {
           <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
             coming soon...
           </p>
+          <PostsViewer />
       </main>
     </div>
   );
