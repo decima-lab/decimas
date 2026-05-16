@@ -13,6 +13,14 @@ npx supabase link --project-ref imivbltplalkdhdjkupq
 
 Your project ref is in the Supabase dashboard under **Project Settings → General**.
 
+### Reset script
+
+`db/reset.sh` is a convenience script that drops all tables, re-applies `schema.sql`, and re-seeds data in one command. Use it during development when you want a clean slate.
+
+```bash
+./db/reset.sh
+```
+
 ### Option A — Run SQL directly
 
 ```bash

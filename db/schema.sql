@@ -35,6 +35,23 @@ create table user_roles (
   primary key (user_id, role)
 );
 
+create table post_vote (
+  post_id uuid not null references post(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  vote    smallint not null check (vote in (1, -1)),
+  primary key (post_id, user_id)
+);
+
+create view post_with_votes as
+  select
+    p.*,
+    coalesce(sum(case when v.vote = 1 then 1 else 0 end), 0)  as upvotes,
+    coalesce(sum(case when v.vote = -1 then 1 else 0 end), 0) as downvotes,
+    coalesce(sum(v.vote), 0)                                   as vote_score
+  from post p
+  left join post_vote v on v.post_id = p.id
+  group by p.id;
+
 -- is_admin() runs with owner privileges (security definer) to avoid
 -- infinite recursion when policies on other tables check user_roles.
 create schema if not exists private;
@@ -65,6 +82,11 @@ grant select on post_tag_mapping to anon;
 grant select, insert, update, delete on post_tag_mapping to authenticated, service_role;
 
 grant select, insert, update, delete on user_roles to authenticated, service_role;
+
+grant select on post_vote to anon;
+grant select, insert, update, delete on post_vote to authenticated, service_role;
+
+grant select on post_with_votes to anon, authenticated, service_role;
 
 -- RLS: category
 alter table category enable row level security;
@@ -109,6 +131,15 @@ create policy "admins can write post_tag_mapping" on post_tag_mapping
   for all using (
     private.is_admin()
   );
+
+-- RLS: post_vote
+alter table post_vote enable row level security;
+
+create policy "public can read votes" on post_vote
+  for select using (true);
+
+create policy "users can manage own vote" on post_vote
+  for all using ((select auth.uid()) = user_id);
 
 -- RLS: user_roles
 alter table user_roles enable row level security;
