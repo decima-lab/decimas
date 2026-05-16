@@ -51,6 +51,21 @@ as $$
   );
 $$;
 
+-- Data API grants (required from May 30 for new projects, Oct 30 for existing)
+grant select on category to anon;
+grant select, insert, update, delete on category to authenticated, service_role;
+
+grant select on post to anon;
+grant select, insert, update, delete on post to authenticated, service_role;
+
+grant select on tag to anon;
+grant select, insert, update, delete on tag to authenticated, service_role;
+
+grant select on post_tag_mapping to anon;
+grant select, insert, update, delete on post_tag_mapping to authenticated, service_role;
+
+grant select, insert, update, delete on user_roles to authenticated, service_role;
+
 -- RLS: category
 alter table category enable row level security;
 
