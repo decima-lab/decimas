@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUserAndRoles } from "@/lib/auth";
 import { getAdminPosts } from "@/lib/posts";
 import { createClient } from "@/utils/supabase/server";
-import { AdminClient } from "./admin-client";
+import { AdminClient } from "./_components/admin-client";
 
 export const dynamic = "force-dynamic";
 

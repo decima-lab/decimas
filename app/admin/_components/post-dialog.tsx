@@ -156,7 +156,12 @@ export function PostDialog({
               onValueChange={(v) => setCategoryId(v ?? UNCATEGORISED)}
             >
               <SelectTrigger id="category">
-                <SelectValue placeholder="Uncategorised" />
+                <SelectValue placeholder="Uncategorised">
+                  {categoryId === UNCATEGORISED
+                    ? "Uncategorised"
+                    : (categories.find((c) => c.id === categoryId)?.label ??
+                      "Uncategorised")}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={UNCATEGORISED}>Uncategorised</SelectItem>

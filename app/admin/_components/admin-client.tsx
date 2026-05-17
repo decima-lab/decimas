@@ -699,7 +699,9 @@ function UsersPanel({
                 onValueChange={(v) => v && setRole(v as Role)}
               >
                 <SelectTrigger id="promote-role">
-                  <SelectValue />
+                  <SelectValue>
+                    {role === "admin" ? "Admin" : "Editor"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="editor">Editor</SelectItem>
