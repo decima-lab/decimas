@@ -1,4 +1,4 @@
-import PostsViewer from "@/app-components/PostsViewer";
+import PostsViewer from "@/components/PostsViewer";
 
 export default function Home() {
   return (

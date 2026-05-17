@@ -1,58 +1,92 @@
-import { describe, expect, it } from "vitest";
-import type { Post } from "./posts";
-import { formatPost, formatPosts } from "./posts";
+import { describe, expect, it, vi } from "vitest";
+import type { AdminPost } from "./posts";
+import { getAdminPosts } from "./posts";
 
-const mockPost: Post = {
-  id: "c1000000-0000-0000-0000-000000000001",
+type Resp = { data: unknown; error: unknown };
+
+function makeSupabase(
+  resp: Resp,
+  spies?: {
+    from?: ReturnType<typeof vi.fn>;
+    select?: ReturnType<typeof vi.fn>;
+  },
+) {
+  const innerOrder = () => Promise.resolve(resp);
+  const outerOrder = vi.fn().mockReturnValue({ order: innerOrder });
+  const select =
+    spies?.select ?? vi.fn().mockReturnValue({ order: outerOrder });
+  const from = spies?.from ?? vi.fn().mockReturnValue({ select });
+  return { from, select, outerOrder } as unknown as {
+    from: ReturnType<typeof vi.fn>;
+    select: ReturnType<typeof vi.fn>;
+    outerOrder: ReturnType<typeof vi.fn>;
+  };
+}
+
+const samplePost: AdminPost = {
+  id: "p1",
   label: "Upwork",
   description: "Freelance marketplace",
-  logo_url: "https://upwork.com/favicon.ico",
   link: "https://upwork.com",
+  logo_url: null,
   is_verified: true,
   is_global: true,
-  category: { label: "Freelancing" },
-  post_tag_mapping: [
-    { tag: { label: "Global", category: "Location" } },
-    { tag: { label: "Free to Join", category: "Cost" } },
-  ],
+  is_deleted: false,
+  status: "published",
+  created_by: "user-1",
+  category: { id: "c1", label: "Freelancing" },
+  post_tag_mapping: [{ tag: { id: "t1", label: "Global" } }],
 };
 
-describe("formatPost", () => {
-  it("maps fields correctly", () => {
-    const result = formatPost(mockPost);
-    expect(result.name).toBe("Upwork");
-    expect(result.category).toBe("Freelancing");
-    expect(result.isVerified).toBe(true);
-    expect(result.isGlobal).toBe(true);
+describe("getAdminPosts", () => {
+  it("returns posts when supabase succeeds", async () => {
+    const mock = makeSupabase({ data: [samplePost], error: null });
+    const result = await getAdminPosts({ from: mock.from } as never);
+    expect(result).toEqual([samplePost]);
   });
 
-  it("extracts tag labels into a flat array", () => {
-    const result = formatPost(mockPost);
-    expect(result.tags).toEqual(["Global", "Free to Join"]);
+  it("returns an empty array when data is null", async () => {
+    const mock = makeSupabase({ data: null, error: null });
+    const result = await getAdminPosts({ from: mock.from } as never);
+    expect(result).toEqual([]);
   });
 
-  it("falls back to Uncategorised when category is null", () => {
-    const result = formatPost({ ...mockPost, category: null });
-    expect(result.category).toBe("Uncategorised");
+  it("throws when supabase returns an error", async () => {
+    const mock = makeSupabase({ data: null, error: { message: "boom" } });
+    await expect(getAdminPosts({ from: mock.from } as never)).rejects.toThrow(
+      "boom",
+    );
   });
 
-  it("falls back to empty string when description is null", () => {
-    const result = formatPost({
-      ...mockPost,
-      description: null as unknown as string,
-    });
-    expect(result.description).toBe("");
-  });
-});
-
-describe("formatPosts", () => {
-  it("formats an array of posts", () => {
-    const results = formatPosts([mockPost, mockPost]);
-    expect(results).toHaveLength(2);
-    expect(results[0].name).toBe("Upwork");
+  it("queries the post table", async () => {
+    const mock = makeSupabase({ data: [], error: null });
+    await getAdminPosts({ from: mock.from } as never);
+    expect(mock.from).toHaveBeenCalledWith("post");
   });
 
-  it("returns empty array for empty input", () => {
-    expect(formatPosts([])).toEqual([]);
+  it("requests the admin-required columns", async () => {
+    const mock = makeSupabase({ data: [], error: null });
+    await getAdminPosts({ from: mock.from } as never);
+    const cols = mock.select.mock.calls[0][0] as string;
+    for (const col of [
+      "status",
+      "created_by",
+      "is_deleted",
+      "category(id, label)",
+      "post_tag_mapping(tag(id, label))",
+    ]) {
+      expect(cols).toContain(col);
+    }
+  });
+
+  it("orders drafts before published, then alphabetically", async () => {
+    const innerOrder = vi.fn().mockResolvedValue({ data: [], error: null });
+    const outerOrder = vi.fn().mockReturnValue({ order: innerOrder });
+    const select = vi.fn().mockReturnValue({ order: outerOrder });
+    const from = vi.fn().mockReturnValue({ select });
+
+    await getAdminPosts({ from } as never);
+    expect(outerOrder).toHaveBeenCalledWith("status", { ascending: true });
+    expect(innerOrder).toHaveBeenCalledWith("label");
   });
 });

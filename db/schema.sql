@@ -14,6 +14,9 @@ create table post (
   link text,
   is_verified bool not null default false,
   is_global bool not null default false,
+  is_deleted bool not null default false,
+  status text not null default 'draft' check (status in ('draft', 'published')),
+  created_by uuid references auth.users(id),
   metadata jsonb
 );
 
@@ -50,6 +53,7 @@ create view post_with_votes as
     coalesce(sum(v.vote), 0)                                   as vote_score
   from post p
   left join post_vote v on v.post_id = p.id
+  where not p.is_deleted
   group by p.id;
 
 -- is_admin() runs with owner privileges (security definer) to avoid
@@ -68,6 +72,58 @@ as $$
   );
 $$;
 
+create or replace function private.is_editor_or_admin()
+returns boolean
+language sql
+security definer
+stable
+as $$
+  select exists (
+    select 1 from user_roles
+    where user_id = (select auth.uid()) and role in ('admin', 'editor')
+  );
+$$;
+
+-- Mirror of auth.users that lives in our own schema so we can query emails
+-- with normal RLS-protected reads (no security-definer RPCs needed).
+create table profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  email text not null
+);
+
+create unique index profiles_email_idx on profiles (email);
+
+-- Trigger keeps profiles in sync with auth.users on signup + email change.
+-- security definer because the trigger inserts into a table the auth schema
+-- normally can't write to.
+create or replace function handle_auth_user_change()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.email is not null then
+    insert into public.profiles (id, email)
+    values (new.id, lower(new.email))
+    on conflict (id) do update set email = excluded.email;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_changed on auth.users;
+create trigger on_auth_user_changed
+  after insert or update of email on auth.users
+  for each row execute function handle_auth_user_change();
+
+-- Backfill for users that already existed before this table was added.
+insert into profiles (id, email)
+  select u.id, lower(u.email)
+  from auth.users u
+  where u.email is not null
+  on conflict (id) do update set email = excluded.email;
+
 -- Data API grants (required from May 30 for new projects, Oct 30 for existing)
 grant select on category to anon;
 grant select, insert, update, delete on category to authenticated, service_role;
@@ -82,6 +138,9 @@ grant select on post_tag_mapping to anon;
 grant select, insert, update, delete on post_tag_mapping to authenticated, service_role;
 
 grant select, insert, update, delete on user_roles to authenticated, service_role;
+
+grant select on profiles to authenticated;
+grant select, insert, update, delete on profiles to service_role;
 
 grant select on post_vote to anon;
 grant select, insert, update, delete on post_vote to authenticated, service_role;
@@ -105,9 +164,9 @@ alter table post enable row level security;
 create policy "public can read posts" on post
   for select using (true);
 
-create policy "admins can write posts" on post
+create policy "editors and admins can write posts" on post
   for all using (
-    private.is_admin()
+    private.is_editor_or_admin()
   );
 
 -- RLS: tag
@@ -149,3 +208,14 @@ create policy "users can read own role" on user_roles
 
 create policy "admins can write user_roles" on user_roles
   for all using (private.is_admin());
+
+-- RLS: profiles. Users can read their own; admins can read all.
+-- No write policies — only the trigger writes (as security definer, so RLS
+-- doesn't apply to it).
+alter table profiles enable row level security;
+
+create policy "users can read own profile" on profiles
+  for select using ((select auth.uid()) = id);
+
+create policy "admins can read all profiles" on profiles
+  for select using (private.is_admin());
