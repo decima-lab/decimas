@@ -10,12 +10,11 @@
     "format": "biome format --write",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
-    "ci": "npm run lint && npm test"
+    "ci": "tsc --noEmit && npm run lint && npm test"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.105.1",
-
     "lucide-react": "^1.16.0",
     "next": "16.2.4",
     "react": "19.2.4",
@@ -30,8 +29,6 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^4.7.0",
-    "eslint": "^9",
-    "eslint-config-next": "16.2.4",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vite-tsconfig-paths": "^4.3.2",
