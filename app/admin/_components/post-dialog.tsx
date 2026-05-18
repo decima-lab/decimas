@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -24,6 +23,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { createPost, type PostInput, updatePost } from "@/lib/actions";
 import type { AdminPost } from "@/lib/posts";
+import { toast } from "@/lib/toast";
 
 type Category = { id: string; label: string };
 

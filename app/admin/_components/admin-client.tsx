@@ -14,7 +14,6 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { toast } from "sonner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -70,6 +69,7 @@ import {
 } from "@/lib/actions";
 import type { Role } from "@/lib/auth";
 import type { AdminPost } from "@/lib/posts";
+import { toast } from "@/lib/toast";
 import { PostDialog } from "./post-dialog";
 
 type Category = { id: string; label: string };
@@ -451,18 +451,16 @@ function PostRow({
       <TableCell className="text-muted-foreground text-sm">{author}</TableCell>
       <TableCell>
         <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-8"
-                disabled={pending}
-              />
-            }
-          >
-            <MoreHorizontalIcon className="size-4" />
-            <span className="sr-only">Actions</span>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8"
+              disabled={pending}
+            >
+              <MoreHorizontalIcon className="size-4" />
+              <span className="sr-only">Actions</span>
+            </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-44">
             {canEdit && !post.is_deleted && (
@@ -640,18 +638,16 @@ function UsersPanel({
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
-                        <DropdownMenuTrigger
-                          render={
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="size-8"
-                              disabled={pending || u.id === currentUserId}
-                            />
-                          }
-                        >
-                          <MoreHorizontalIcon className="size-4" />
-                          <span className="sr-only">Actions</span>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-8"
+                            disabled={pending || u.id === currentUserId}
+                          >
+                            <MoreHorizontalIcon className="size-4" />
+                            <span className="sr-only">Actions</span>
+                          </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-44">
                           {u.roles.map((r) => (
