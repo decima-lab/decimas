@@ -1,5 +1,5 @@
-import Logo from './Logo'
-import Link from 'next/link'
+import Link from "next/link";
+import Logo from "./Logo";
 
 export default function Footer() {
   return (
@@ -15,25 +15,88 @@ export default function Footer() {
           <div>
             <h4 className="font-semibold mb-4">Explore</h4>
             <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-              <li><Link href="#" className="hover:text-blue-600 dark:hover:text-blue-400">All Platforms</Link></li>
-              <li><Link href="#" className="hover:text-blue-600 dark:hover:text-blue-400">Categories</Link></li>
-              <li><Link href="#" className="hover:text-blue-600 dark:hover:text-blue-400">Verified Only</Link></li>
+              <li>
+                <Link
+                  href="#"
+                  className="hover:text-blue-600 dark:hover:text-blue-400"
+                >
+                  All Platforms
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="#"
+                  className="hover:text-blue-600 dark:hover:text-blue-400"
+                >
+                  Categories
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="#"
+                  className="hover:text-blue-600 dark:hover:text-blue-400"
+                >
+                  Verified Only
+                </Link>
+              </li>
             </ul>
           </div>
           <div>
             <h4 className="font-semibold mb-4">Company</h4>
             <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-              <li><Link href="#" className="hover:text-blue-600 dark:hover:text-blue-400">About</Link></li>
-              <li><Link href="#" className="hover:text-blue-600 dark:hover:text-blue-400">Contact</Link></li>
-              <li><Link href="#" className="hover:text-blue-600 dark:hover:text-blue-400">Blog</Link></li>
+              <li>
+                <Link
+                  href="#"
+                  className="hover:text-blue-600 dark:hover:text-blue-400"
+                >
+                  About
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="#"
+                  className="hover:text-blue-600 dark:hover:text-blue-400"
+                >
+                  Contact
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="#"
+                  className="hover:text-blue-600 dark:hover:text-blue-400"
+                >
+                  Blog
+                </Link>
+              </li>
             </ul>
           </div>
           <div>
             <h4 className="font-semibold mb-4">Legal</h4>
             <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-              <li><Link href="#" className="hover:text-blue-600 dark:hover:text-blue-400">Privacy</Link></li>
-              <li><Link href="#" className="hover:text-blue-600 dark:hover:text-blue-400">Terms</Link></li>
-              <li><Link href="#" className="hover:text-blue-600 dark:hover:text-blue-400">Disclaimer</Link></li>
+              <li>
+                <Link
+                  href="#"
+                  className="hover:text-blue-600 dark:hover:text-blue-400"
+                >
+                  Privacy
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="#"
+                  className="hover:text-blue-600 dark:hover:text-blue-400"
+                >
+                  Terms
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="#"
+                  className="hover:text-blue-600 dark:hover:text-blue-400"
+                >
+                  Disclaimer
+                </Link>
+              </li>
             </ul>
           </div>
         </div>
@@ -44,5 +107,5 @@ export default function Footer() {
         </div>
       </div>
     </footer>
-  )
+  );
 }

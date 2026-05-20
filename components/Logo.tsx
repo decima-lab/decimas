@@ -5,7 +5,7 @@ const LOGO_VARIANTS = {
   LINK: "link",
 } as const;
 
-type LogoVariant = typeof LOGO_VARIANTS[keyof typeof LOGO_VARIANTS];
+type LogoVariant = (typeof LOGO_VARIANTS)[keyof typeof LOGO_VARIANTS];
 
 interface LogoProps {
   variant?: LogoVariant;

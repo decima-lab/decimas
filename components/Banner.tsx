@@ -6,10 +6,11 @@ export default function Banner() {
           Your Gateway to Online Earning
         </h1>
         <p className="text-lg md:text-xl text-gray-600 dark:text-gray-300">
-          Discover the best verified platforms and websites to earn money online. Explore thousands of opportunities, compare features, and start earning today.
+          Discover the best verified platforms and websites to earn money
+          online. Explore thousands of opportunities, compare features, and
+          start earning today.
         </p>
       </div>
     </div>
-  )
+  );
 }
-  

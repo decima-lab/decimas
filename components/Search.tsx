@@ -1,7 +1,7 @@
 "use client";
 
+import { Filter, Search as SearchIcon } from "lucide-react";
 import { useState } from "react";
-import { Search as SearchIcon, Filter } from "lucide-react";
 
 export default function Search() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -35,7 +35,7 @@ export default function Search() {
           <Filter size={18} />
           <span className="text-sm font-medium">Filters:</span>
         </div>
-        
+
         {/* Category Filter */}
         <select
           value={category}
@@ -58,7 +58,9 @@ export default function Search() {
             onChange={(e) => setVerified(e.target.checked)}
             className="w-4 h-4 rounded cursor-pointer"
           />
-          <span className="text-sm text-gray-700 dark:text-gray-300">Verified Only</span>
+          <span className="text-sm text-gray-700 dark:text-gray-300">
+            Verified Only
+          </span>
         </label>
 
         {/* Search Button */}
