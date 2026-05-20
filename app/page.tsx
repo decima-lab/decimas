@@ -1,18 +1,27 @@
-import PostsViewer from "@/components/PostsViewer";
+import { Banner, Card, Container, Footer, Header, Search } from "@/components";
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl gap-3 flex-col items-center justify-between py-50 px-16 bg-white dark:bg-black sm:items-start">
-        <div className="text-2xl font-bold dark:text-zinc-400">decimas.</div>
-        <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-          Welcome to decimas, find your next way to make money online.
-        </h1>
-        <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-          coming soon...
-        </p>
-        <PostsViewer />
-      </main>
-    </div>
+    <>
+      <Header />
+      <Banner />
+      <Container>
+        <div className="py-8 space-y-6">
+          <div className="flex justify-between items-center">
+            <h2 className="text-2xl font-bold">Explore Opportunities</h2>
+            <span className="text-sm text-gray-600 dark:text-gray-400">
+              Showing 10 platforms
+            </span>
+          </div>
+          <Search />
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 10 }, (_, i) => `card-${i}`).map((id) => (
+              <Card key={id} />
+            ))}
+          </div>
+        </div>
+      </Container>
+      <Footer />
+    </>
   );
 }

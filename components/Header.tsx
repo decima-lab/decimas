@@ -1,46 +1,56 @@
-import { cookies } from "next/headers";
+"use client";
+
 import Link from "next/link";
-import { signOut } from "@/lib/actions";
-import { createClient } from "@/utils/supabase/server";
+import { useEffect, useState } from "react";
+import { createClient } from "@/utils/supabase/client";
+import Logo from "./Logo";
 
-export default async function Header() {
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+export default function Header() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const { data: role } = user
-    ? await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .eq("role", "admin")
-        .single()
-    : { data: null };
-
-  const isAdmin = !!role;
+  useEffect(() => {
+    const checkAuth = async () => {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      setIsLoggedIn(!!user);
+    };
+    checkAuth();
+  }, []);
 
   return (
-    <header
-      style={{
-        display: "flex",
-        justifyContent: "flex-end",
-        gap: "1rem",
-        padding: "1rem",
-      }}
-    >
-      {user ? (
-        <>
-          {isAdmin && <Link href="/admin">Admin</Link>}
-          <form action={signOut}>
-            <button type="submit">Logout</button>
-          </form>
-        </>
-      ) : (
-        <Link href="/login">Login</Link>
-      )}
+    <header className="w-full flex items-center justify-between p-4 bg-white dark:bg-black border-b border-gray-200 dark:border-zinc-800">
+      <Logo variant={"link"} />
+      <nav className="flex items-center gap-6">
+        <Link
+          href="#"
+          className="text-sm font-medium hover:text-blue-600 dark:hover:text-blue-400"
+        >
+          Browse
+        </Link>
+        <Link
+          href="#"
+          className="text-sm font-medium hover:text-blue-600 dark:hover:text-blue-400"
+        >
+          Categories
+        </Link>
+        {isLoggedIn ? (
+          <Link
+            href="/admin"
+            className="text-sm font-medium px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Admin
+          </Link>
+        ) : (
+          <Link
+            href="/login"
+            className="text-sm font-medium px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Sign In
+          </Link>
+        )}
+      </nav>
     </header>
   );
 }
