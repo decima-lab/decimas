@@ -3,7 +3,7 @@
 import { Filter, Search as SearchIcon } from "lucide-react";
 import { useState } from "react";
 
-export default function Search() {
+export function PostsSearch() {
   const [searchQuery, setSearchQuery] = useState("");
   const [category, setCategory] = useState("all");
   const [verified, setVerified] = useState(false);
@@ -15,7 +15,6 @@ export default function Search() {
 
   return (
     <form onSubmit={handleSearch} className="space-y-4">
-      {/* Search Input */}
       <div className="relative">
         <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
           <SearchIcon size={20} />
@@ -29,14 +28,12 @@ export default function Search() {
         />
       </div>
 
-      {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
         <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
           <Filter size={18} />
           <span className="text-sm font-medium">Filters:</span>
         </div>
 
-        {/* Category Filter */}
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value)}
@@ -50,7 +47,6 @@ export default function Search() {
           <option value="other">Other</option>
         </select>
 
-        {/* Verified Only Toggle */}
         <label className="flex items-center gap-2 cursor-pointer">
           <input
             type="checkbox"
@@ -63,7 +59,6 @@ export default function Search() {
           </span>
         </label>
 
-        {/* Search Button */}
         <button
           type="submit"
           className="ml-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-500 font-medium transition-colors"

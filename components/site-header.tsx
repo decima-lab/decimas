@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { Logo } from "@/components/ui/logo";
 import { createClient } from "@/utils/supabase/client";
-import Logo from "./Logo";
 
-export default function Header() {
+export function SiteHeader() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {

@@ -13,7 +13,7 @@ interface LogoProps {
 
 const appName = process.env.NEXT_PUBLIC_APP_NAME;
 
-export default function Logo(props: LogoProps) {
+export function Logo(props: LogoProps) {
   return (
     <>
       {props.variant === LOGO_VARIANTS.LINK ? (

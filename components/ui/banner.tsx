@@ -1,4 +1,4 @@
-export default function Banner() {
+export function Banner() {
   return (
     <div className="bg-gray-50 dark:bg-zinc-900 py-24 px-4">
       <div className="max-w-4xl mx-auto text-center">
