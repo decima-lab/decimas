@@ -1,9 +1,14 @@
-import { Banner, Card, Container, Footer, Header, Search } from "@/components";
+import { PostsSearch } from "@/components/posts-search";
+import { SiteHeader } from "@/components/site-header";
+import { Banner } from "@/components/ui/banner";
+import { Container } from "@/components/ui/container";
+import { Footer } from "@/components/ui/footer";
+import { PostCard } from "@/components/ui/post-card";
 
 export default function Home() {
   return (
     <>
-      <Header />
+      <SiteHeader />
       <Banner />
       <Container>
         <div className="py-8 space-y-6">
@@ -13,10 +18,10 @@ export default function Home() {
               Showing 10 platforms
             </span>
           </div>
-          <Search />
+          <PostsSearch />
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 10 }, (_, i) => `card-${i}`).map((id) => (
-              <Card key={id} />
+              <PostCard key={id} />
             ))}
           </div>
         </div>

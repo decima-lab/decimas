@@ -1,7 +1,7 @@
 import Link from "next/link";
-import Logo from "./Logo";
+import { Logo } from "./logo";
 
-export default function Footer() {
+export function Footer() {
   return (
     <footer className="bg-gray-50 dark:bg-zinc-900 border-t border-gray-200 dark:border-zinc-800">
       <div className="max-w-6xl mx-auto px-4 py-12">

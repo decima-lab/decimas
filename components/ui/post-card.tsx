@@ -1,7 +1,7 @@
 import { CheckCircle2, Globe } from "lucide-react";
 import Image from "next/image";
 
-export default function Card() {
+export function PostCard() {
   return (
     <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-md hover:shadow-lg transition-shadow p-6 border border-gray-200 dark:border-zinc-700">
       <div className="flex items-start justify-between mb-4">
