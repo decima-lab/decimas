@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { AdminPost } from "./posts";
-import { getAdminPosts } from "./posts";
+import { getAllPosts } from "./posts";
 
 type Resp = { data: unknown; error: unknown };
 
@@ -38,35 +38,35 @@ const samplePost: AdminPost = {
   post_tag_mapping: [{ tag: { id: "t1", label: "Global" } }],
 };
 
-describe("getAdminPosts", () => {
+describe("getAllPosts", () => {
   it("returns posts when supabase succeeds", async () => {
     const mock = makeSupabase({ data: [samplePost], error: null });
-    const result = await getAdminPosts({ from: mock.from } as never);
+    const result = await getAllPosts({ from: mock.from } as never);
     expect(result).toEqual([samplePost]);
   });
 
   it("returns an empty array when data is null", async () => {
     const mock = makeSupabase({ data: null, error: null });
-    const result = await getAdminPosts({ from: mock.from } as never);
+    const result = await getAllPosts({ from: mock.from } as never);
     expect(result).toEqual([]);
   });
 
   it("throws when supabase returns an error", async () => {
     const mock = makeSupabase({ data: null, error: { message: "boom" } });
-    await expect(getAdminPosts({ from: mock.from } as never)).rejects.toThrow(
+    await expect(getAllPosts({ from: mock.from } as never)).rejects.toThrow(
       "boom",
     );
   });
 
   it("queries the post table", async () => {
     const mock = makeSupabase({ data: [], error: null });
-    await getAdminPosts({ from: mock.from } as never);
+    await getAllPosts({ from: mock.from } as never);
     expect(mock.from).toHaveBeenCalledWith("post");
   });
 
   it("requests the admin-required columns", async () => {
     const mock = makeSupabase({ data: [], error: null });
-    await getAdminPosts({ from: mock.from } as never);
+    await getAllPosts({ from: mock.from } as never);
     const cols = mock.select.mock.calls[0][0] as string;
     for (const col of [
       "status",
@@ -85,7 +85,7 @@ describe("getAdminPosts", () => {
     const select = vi.fn().mockReturnValue({ order: outerOrder });
     const from = vi.fn().mockReturnValue({ select });
 
-    await getAdminPosts({ from } as never);
+    await getAllPosts({ from } as never);
     expect(outerOrder).toHaveBeenCalledWith("status", { ascending: true });
     expect(innerOrder).toHaveBeenCalledWith("label");
   });

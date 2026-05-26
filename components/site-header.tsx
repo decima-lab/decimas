@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Logo } from "@/components/ui/logo";
@@ -35,21 +33,6 @@ export function SiteHeader() {
         >
           Categories
         </Link>
-        {isLoggedIn ? (
-          <Link
-            href="/admin"
-            className="text-sm font-medium px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            Admin
-          </Link>
-        ) : (
-          <Link
-            href="/login"
-            className="text-sm font-medium px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            Sign In
-          </Link>
-        )}
       </nav>
     </header>
   );

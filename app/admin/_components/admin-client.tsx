@@ -3,6 +3,7 @@
 import {
   CheckCircle2Icon,
   FileTextIcon,
+  LogOutIcon,
   MoreHorizontalIcon,
   PencilIcon,
   PlusIcon,
@@ -65,6 +66,7 @@ import {
   promoteUser,
   publishPost,
   restorePost,
+  signOut,
   unpublishPost,
 } from "@/lib/actions";
 import type { Role } from "@/lib/auth";
@@ -153,6 +155,12 @@ function PageHeader({ currentUser }: { currentUser: Props["currentUser"] }) {
             {currentUser.isAdmin ? "Admin" : "Editor"}
           </Badge>
           <span className="text-muted-foreground">{currentUser.email}</span>
+          <form action={signOut}>
+            <Button variant="outline" size="sm" type="submit">
+              <LogOutIcon className="size-4" />
+              Sign out
+            </Button>
+          </form>
         </div>
       </div>
     </header>
