@@ -15,7 +15,7 @@ export type AdminPost = {
   post_tag_mapping: { tag: { id: string; label: string } }[];
 };
 
-export async function getAdminPosts(
+export async function getAllPosts(
   supabase: SupabaseClient,
 ): Promise<AdminPost[]> {
   const { data, error } = await supabase

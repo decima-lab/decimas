@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getCurrentUserAndRoles } from "@/lib/auth";
-import { getAdminPosts } from "@/lib/posts";
+import { getAllPosts } from "@/lib/posts";
 import { createClient } from "@/utils/supabase/server";
 import { AdminClient } from "./_components/admin-client";
 
@@ -11,7 +11,7 @@ export default async function AdminPage() {
   const { user, roles } = await getCurrentUserAndRoles();
 
   if (!user) {
-    redirect("/login");
+    redirect("/login?redirectTo=/admin");
   }
 
   const isAdmin = roles.includes("admin");
@@ -32,10 +32,7 @@ export default async function AdminPage() {
 
   const supabase = createClient(await cookies());
 
-  let posts = await getAdminPosts(supabase);
-  if (!isAdmin) {
-    posts = posts.filter((p) => p.created_by === user.id);
-  }
+  const posts = await getAllPosts(supabase);
 
   const [{ data: categories }, { data: tags }] = await Promise.all([
     supabase.from("category").select("id, label").order("label"),

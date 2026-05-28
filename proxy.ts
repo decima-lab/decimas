@@ -11,11 +11,18 @@ export async function proxy(request: NextRequest) {
   const isLoginRoute = request.nextUrl.pathname.startsWith("/login");
 
   if (isAdminRoute && !user) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    return NextResponse.redirect(
+      new URL("/login?redirectTo=/admin", request.url),
+    );
   }
 
   if (isLoginRoute && user) {
-    return NextResponse.redirect(new URL("/", request.url));
+    const redirectTo = request.nextUrl.searchParams.get("redirectTo");
+    const safeRedirect =
+      redirectTo?.startsWith("/") && !redirectTo.startsWith("//")
+        ? redirectTo
+        : "/";
+    return NextResponse.redirect(new URL(safeRedirect, request.url));
   }
 
   return supabaseResponse;

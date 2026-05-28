@@ -22,7 +22,13 @@ export async function signIn(
     return { error: error.message };
   }
 
-  redirect("/");
+  const redirectTo = formData.get("redirectTo") as string | null;
+  const safeRedirect =
+    redirectTo?.startsWith("/") && !redirectTo.startsWith("//")
+      ? redirectTo
+      : "/";
+
+  redirect(safeRedirect);
 }
 
 export async function signOut() {

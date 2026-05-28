@@ -1,24 +1,7 @@
-"use client";
-
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { Logo } from "@/components/ui/logo";
-import { createClient } from "@/utils/supabase/client";
 
 export function SiteHeader() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      setIsLoggedIn(!!user);
-    };
-    checkAuth();
-  }, []);
-
   return (
     <header className="w-full flex items-center justify-between p-4 bg-white dark:bg-black border-b border-gray-200 dark:border-zinc-800">
       <Logo variant={"link"} />
@@ -35,21 +18,6 @@ export function SiteHeader() {
         >
           Categories
         </Link>
-        {isLoggedIn ? (
-          <Link
-            href="/admin"
-            className="text-sm font-medium px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            Admin
-          </Link>
-        ) : (
-          <Link
-            href="/login"
-            className="text-sm font-medium px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            Sign In
-          </Link>
-        )}
       </nav>
     </header>
   );
