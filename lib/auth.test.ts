@@ -37,94 +37,154 @@ beforeEach(() => {
 });
 
 describe("getCurrentUserAndRoles", () => {
-  it("returns null user and empty roles when not signed in", async () => {
-    setUser(null);
-    const result = await getCurrentUserAndRoles();
-    expect(result).toEqual({ user: null, roles: [] });
+  describe("when no one is signed in", () => {
+    it("returns a null user and empty roles", async () => {
+      // # GIVEN
+      setUser(null);
+      // # WHEN
+      const result = await getCurrentUserAndRoles();
+      // # THEN
+      expect(result).toEqual({ user: null, roles: [] });
+    });
   });
 
-  it("returns user and roles for an authenticated user", async () => {
-    setUser({ id: "u1", email: "a@b.com" });
-    setRoles(["admin"]);
-    const result = await getCurrentUserAndRoles();
-    expect(result.user?.id).toBe("u1");
-    expect(result.roles).toEqual(["admin"]);
+  describe("when an admin is signed in", () => {
+    it("returns the user and their role", async () => {
+      // # GIVEN
+      setUser({ id: "u1", email: "a@b.com" });
+      setRoles(["admin"]);
+      // # WHEN
+      const result = await getCurrentUserAndRoles();
+      // # THEN
+      expect(result.user?.id).toBe("u1");
+      expect(result.roles).toEqual(["admin"]);
+    });
   });
 
-  it("returns multiple roles when present", async () => {
-    setUser({ id: "u1" });
-    setRoles(["admin", "editor"]);
-    const result = await getCurrentUserAndRoles();
-    expect(result.roles.sort()).toEqual(["admin", "editor"]);
+  describe("when a user has both admin and editor roles", () => {
+    it("returns both roles", async () => {
+      // # GIVEN
+      setUser({ id: "u1" });
+      setRoles(["admin", "editor"]);
+      // # WHEN
+      const result = await getCurrentUserAndRoles();
+      // # THEN
+      expect(result.roles.sort()).toEqual(["admin", "editor"]);
+    });
   });
 
-  it("filters out unrecognised roles", async () => {
-    setUser({ id: "u1" });
-    setRoles(["admin", "spammer", "editor"]);
-    const result = await getCurrentUserAndRoles();
-    expect(result.roles.sort()).toEqual(["admin", "editor"]);
+  describe("when the database holds unknown role names", () => {
+    it("filters them out and returns only recognised roles", async () => {
+      // # GIVEN
+      setUser({ id: "u1" });
+      setRoles(["admin", "spammer", "editor"]);
+      // # WHEN
+      const result = await getCurrentUserAndRoles();
+      // # THEN
+      expect(result.roles.sort()).toEqual(["admin", "editor"]);
+    });
   });
 
-  it("returns empty roles when the user has none", async () => {
-    setUser({ id: "u1" });
-    setRoles([]);
-    const result = await getCurrentUserAndRoles();
-    expect(result.roles).toEqual([]);
+  describe("when a signed-in user has no role rows", () => {
+    it("returns empty roles", async () => {
+      // # GIVEN
+      setUser({ id: "u1" });
+      setRoles([]);
+      // # WHEN
+      const result = await getCurrentUserAndRoles();
+      // # THEN
+      expect(result.roles).toEqual([]);
+    });
   });
 });
 
 describe("requireAdmin", () => {
-  it("throws Unauthorized when not signed in", async () => {
-    setUser(null);
-    await expect(requireAdmin()).rejects.toThrow("Unauthorized");
+  describe("when no one is signed in", () => {
+    it("throws Unauthorized", async () => {
+      // # GIVEN
+      setUser(null);
+      // # WHEN / # THEN
+      await expect(requireAdmin()).rejects.toThrow("Unauthorized");
+    });
   });
 
-  it("throws Forbidden when user is not an admin", async () => {
-    setUser({ id: "u1" });
-    setRoles(["editor"]);
-    await expect(requireAdmin()).rejects.toThrow(/admin role required/);
+  describe("when a signed-in user only has the editor role", () => {
+    it("throws Forbidden", async () => {
+      // # GIVEN
+      setUser({ id: "u1" });
+      setRoles(["editor"]);
+      // # WHEN / # THEN
+      await expect(requireAdmin()).rejects.toThrow(/admin role required/);
+    });
   });
 
-  it("throws Forbidden when user has no roles", async () => {
-    setUser({ id: "u1" });
-    setRoles([]);
-    await expect(requireAdmin()).rejects.toThrow(/admin role required/);
+  describe("when a signed-in user has no roles at all", () => {
+    it("throws Forbidden", async () => {
+      // # GIVEN
+      setUser({ id: "u1" });
+      setRoles([]);
+      // # WHEN / # THEN
+      await expect(requireAdmin()).rejects.toThrow(/admin role required/);
+    });
   });
 
-  it("returns user and roles when admin", async () => {
-    setUser({ id: "u1", email: "admin@b.com" });
-    setRoles(["admin"]);
-    const result = await requireAdmin();
-    expect(result.user.id).toBe("u1");
-    expect(result.roles).toContain("admin");
+  describe("when an admin is signed in", () => {
+    it("returns the user and their roles", async () => {
+      // # GIVEN
+      setUser({ id: "u1", email: "admin@b.com" });
+      setRoles(["admin"]);
+      // # WHEN
+      const result = await requireAdmin();
+      // # THEN
+      expect(result.user.id).toBe("u1");
+      expect(result.roles).toContain("admin");
+    });
   });
 });
 
 describe("requireEditorOrAdmin", () => {
-  it("throws Unauthorized when not signed in", async () => {
-    setUser(null);
-    await expect(requireEditorOrAdmin()).rejects.toThrow("Unauthorized");
+  describe("when no one is signed in", () => {
+    it("throws Unauthorized", async () => {
+      // # GIVEN
+      setUser(null);
+      // # WHEN / # THEN
+      await expect(requireEditorOrAdmin()).rejects.toThrow("Unauthorized");
+    });
   });
 
-  it("throws Forbidden when user has no relevant role", async () => {
-    setUser({ id: "u1" });
-    setRoles([]);
-    await expect(requireEditorOrAdmin()).rejects.toThrow(
-      /editor or admin role required/,
-    );
+  describe("when a signed-in user has neither editor nor admin role", () => {
+    it("throws Forbidden", async () => {
+      // # GIVEN
+      setUser({ id: "u1" });
+      setRoles([]);
+      // # WHEN / # THEN
+      await expect(requireEditorOrAdmin()).rejects.toThrow(
+        /editor or admin role required/,
+      );
+    });
   });
 
-  it("allows admins", async () => {
-    setUser({ id: "u1" });
-    setRoles(["admin"]);
-    const result = await requireEditorOrAdmin();
-    expect(result.roles).toContain("admin");
+  describe("when an admin is signed in", () => {
+    it("allows access", async () => {
+      // # GIVEN
+      setUser({ id: "u1" });
+      setRoles(["admin"]);
+      // # WHEN
+      const result = await requireEditorOrAdmin();
+      // # THEN
+      expect(result.roles).toContain("admin");
+    });
   });
 
-  it("allows editors", async () => {
-    setUser({ id: "u1" });
-    setRoles(["editor"]);
-    const result = await requireEditorOrAdmin();
-    expect(result.roles).toContain("editor");
+  describe("when an editor is signed in", () => {
+    it("allows access", async () => {
+      // # GIVEN
+      setUser({ id: "u1" });
+      setRoles(["editor"]);
+      // # WHEN
+      const result = await requireEditorOrAdmin();
+      // # THEN
+      expect(result.roles).toContain("editor");
+    });
   });
 });

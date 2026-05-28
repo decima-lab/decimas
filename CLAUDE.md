@@ -48,6 +48,29 @@ A list of compiled websites where users can get money online.
 - Vitest tests: `auth.test.ts`, `actions.test.ts`, `posts.test.ts`
 - CI: `npm run ci` — `tsc --noEmit` + biome check + vitest
 
+## Testing
+- Always run tests via `npm run ci` (runs `tsc --noEmit` + biome check + vitest). Do not invoke `vitest` / `npx vitest` directly.
+- Test files live next to the code under test as `*.test.ts` in `lib/`.
+- Structure: outer `describe` names the unit under test (function or grouping). Nested `describe` blocks name the **scenario** as `"when <condition>"`. Each `it` reads as the **outcome** so `describe + it` form one sentence.
+- Test body comments: only the markers `// # GIVEN`, `// # WHEN`, `// # THEN` (use `// # WHEN / # THEN` when the action and assertion collapse into one `await expect(...).rejects` line). No other explanatory comments — keep `biome-ignore` directives where lint requires them.
+- Example:
+  ```ts
+  describe("getCurrentUserAndRoles", () => {
+    describe("when an admin is signed in", () => {
+      it("returns the user and their role", async () => {
+        // # GIVEN
+        setUser({ id: "u1" });
+        setRoles(["admin"]);
+        // # WHEN
+        const result = await getCurrentUserAndRoles();
+        // # THEN
+        expect(result.user?.id).toBe("u1");
+        expect(result.roles).toEqual(["admin"]);
+      });
+    });
+  });
+  ```
+
 ## Next Steps
 1. Style the login page (still raw HTML)
 2. Wire the landing page card grid to real posts (currently renders 10 placeholder `PostCard`s via `Array.from`)

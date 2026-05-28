@@ -24,7 +24,7 @@ export async function signIn(
 
   const redirectTo = formData.get("redirectTo") as string | null;
   const safeRedirect =
-    redirectTo && redirectTo.startsWith("/") && !redirectTo.startsWith("//")
+    redirectTo?.startsWith("/") && !redirectTo.startsWith("//")
       ? redirectTo
       : "/";
 

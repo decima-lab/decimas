@@ -48,160 +48,180 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-// ---------- createPost ----------
-
 describe("createPost", () => {
-  it("inserts with created_by from the current user and status=draft", async () => {
-    vi.mocked(requireEditorOrAdmin).mockResolvedValue({
-      // biome-ignore lint/suspicious/noExplicitAny: test fixture
-      user: { id: "user-1" } as any,
-      roles: ["editor"],
-    });
-    const insert = vi.fn().mockResolvedValue({ error: null });
-    supabaseFrom.mockReturnValue({ insert });
-
-    await createPost({
-      label: "Acme",
-      description: "Side hustle",
-      link: "https://acme.test",
-      categoryId: "cat-1",
-    });
-
-    expect(insert).toHaveBeenCalledWith(
-      expect.objectContaining({
+  describe("when an editor creates a post", () => {
+    it("inserts a draft owned by the current user", async () => {
+      // # GIVEN
+      vi.mocked(requireEditorOrAdmin).mockResolvedValue({
+        // biome-ignore lint/suspicious/noExplicitAny: test fixture
+        user: { id: "user-1" } as any,
+        roles: ["editor"],
+      });
+      const insert = vi.fn().mockResolvedValue({ error: null });
+      supabaseFrom.mockReturnValue({ insert });
+      // # WHEN
+      await createPost({
         label: "Acme",
         description: "Side hustle",
         link: "https://acme.test",
-        category: "cat-1",
-        status: "draft",
-        created_by: "user-1",
-      }),
-    );
+        categoryId: "cat-1",
+      });
+      // # THEN
+      expect(insert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          label: "Acme",
+          description: "Side hustle",
+          link: "https://acme.test",
+          category: "cat-1",
+          status: "draft",
+          created_by: "user-1",
+        }),
+      );
+    });
   });
 
-  it("throws when supabase returns an error", async () => {
-    vi.mocked(requireEditorOrAdmin).mockResolvedValue({
-      // biome-ignore lint/suspicious/noExplicitAny: test fixture
-      user: { id: "u" } as any,
-      roles: ["editor"],
+  describe("when Supabase returns an error on insert", () => {
+    it("throws the error message", async () => {
+      // # GIVEN
+      vi.mocked(requireEditorOrAdmin).mockResolvedValue({
+        // biome-ignore lint/suspicious/noExplicitAny: test fixture
+        user: { id: "u" } as any,
+        roles: ["editor"],
+      });
+      supabaseFrom.mockReturnValue({
+        insert: vi.fn().mockResolvedValue({ error: { message: "db down" } }),
+      });
+      // # WHEN / # THEN
+      await expect(createPost({ label: "x" })).rejects.toThrow("db down");
     });
-    supabaseFrom.mockReturnValue({
-      insert: vi.fn().mockResolvedValue({ error: { message: "db down" } }),
-    });
-    await expect(createPost({ label: "x" })).rejects.toThrow("db down");
   });
 });
-
-// ---------- updatePost ----------
 
 describe("updatePost", () => {
-  it("admins skip the ownership check and update directly", async () => {
-    vi.mocked(requireEditorOrAdmin).mockResolvedValue({
-      // biome-ignore lint/suspicious/noExplicitAny: test fixture
-      user: { id: "admin-1" } as any,
-      roles: ["admin"],
+  describe("when an admin updates any post", () => {
+    it("skips the ownership check and updates directly", async () => {
+      // # GIVEN
+      vi.mocked(requireEditorOrAdmin).mockResolvedValue({
+        // biome-ignore lint/suspicious/noExplicitAny: test fixture
+        user: { id: "admin-1" } as any,
+        roles: ["admin"],
+      });
+      const eqUpdate = vi.fn().mockResolvedValue({ error: null });
+      const update = vi.fn().mockReturnValue({ eq: eqUpdate });
+      supabaseFrom.mockReturnValue({ update });
+      // # WHEN
+      await updatePost("post-1", { label: "Renamed" });
+      // # THEN
+      expect(update).toHaveBeenCalled();
+      expect(eqUpdate).toHaveBeenCalledWith("id", "post-1");
     });
-    const eqUpdate = vi.fn().mockResolvedValue({ error: null });
-    const update = vi.fn().mockReturnValue({ eq: eqUpdate });
-    supabaseFrom.mockReturnValue({ update });
-
-    await updatePost("post-1", { label: "Renamed" });
-
-    expect(update).toHaveBeenCalled();
-    expect(eqUpdate).toHaveBeenCalledWith("id", "post-1");
   });
 
-  it("rejects an editor editing another user's post", async () => {
-    vi.mocked(requireEditorOrAdmin).mockResolvedValue({
-      // biome-ignore lint/suspicious/noExplicitAny: test fixture
-      user: { id: "editor-1" } as any,
-      roles: ["editor"],
-    });
-    supabaseFrom.mockReturnValueOnce({
-      select: () => ({
-        eq: () => ({
-          single: () =>
-            Promise.resolve({
-              data: { created_by: "other-user", status: "draft" },
-              error: null,
-            }),
+  describe("when an editor tries to update someone else's post", () => {
+    it("throws because editors can only edit their own posts", async () => {
+      // # GIVEN
+      vi.mocked(requireEditorOrAdmin).mockResolvedValue({
+        // biome-ignore lint/suspicious/noExplicitAny: test fixture
+        user: { id: "editor-1" } as any,
+        roles: ["editor"],
+      });
+      supabaseFrom.mockReturnValueOnce({
+        select: () => ({
+          eq: () => ({
+            single: () =>
+              Promise.resolve({
+                data: { created_by: "other-user", status: "draft" },
+                error: null,
+              }),
+          }),
         }),
-      }),
+      });
+      // # WHEN / # THEN
+      await expect(updatePost("post-1", { label: "x" })).rejects.toThrow(
+        /only edit their own posts/,
+      );
     });
-    await expect(updatePost("post-1", { label: "x" })).rejects.toThrow(
-      /only edit their own posts/,
-    );
   });
 
-  it("rejects an editor editing a published post they own", async () => {
-    vi.mocked(requireEditorOrAdmin).mockResolvedValue({
-      // biome-ignore lint/suspicious/noExplicitAny: test fixture
-      user: { id: "editor-1" } as any,
-      roles: ["editor"],
-    });
-    supabaseFrom.mockReturnValueOnce({
-      select: () => ({
-        eq: () => ({
-          single: () =>
-            Promise.resolve({
-              data: { created_by: "editor-1", status: "published" },
-              error: null,
-            }),
+  describe("when an editor tries to update their own published post", () => {
+    it("throws because editors can only edit drafts", async () => {
+      // # GIVEN
+      vi.mocked(requireEditorOrAdmin).mockResolvedValue({
+        // biome-ignore lint/suspicious/noExplicitAny: test fixture
+        user: { id: "editor-1" } as any,
+        roles: ["editor"],
+      });
+      supabaseFrom.mockReturnValueOnce({
+        select: () => ({
+          eq: () => ({
+            single: () =>
+              Promise.resolve({
+                data: { created_by: "editor-1", status: "published" },
+                error: null,
+              }),
+          }),
         }),
-      }),
+      });
+      // # WHEN / # THEN
+      await expect(updatePost("post-1", { label: "x" })).rejects.toThrow(
+        /only edit drafts/,
+      );
     });
-    await expect(updatePost("post-1", { label: "x" })).rejects.toThrow(
-      /only edit drafts/,
-    );
   });
 
-  it("allows an editor to update their own draft", async () => {
-    vi.mocked(requireEditorOrAdmin).mockResolvedValue({
-      // biome-ignore lint/suspicious/noExplicitAny: test fixture
-      user: { id: "editor-1" } as any,
-      roles: ["editor"],
-    });
-    supabaseFrom.mockReturnValueOnce({
-      select: () => ({
-        eq: () => ({
-          single: () =>
-            Promise.resolve({
-              data: { created_by: "editor-1", status: "draft" },
-              error: null,
-            }),
+  describe("when an editor updates their own draft", () => {
+    it("performs the update", async () => {
+      // # GIVEN
+      vi.mocked(requireEditorOrAdmin).mockResolvedValue({
+        // biome-ignore lint/suspicious/noExplicitAny: test fixture
+        user: { id: "editor-1" } as any,
+        roles: ["editor"],
+      });
+      supabaseFrom.mockReturnValueOnce({
+        select: () => ({
+          eq: () => ({
+            single: () =>
+              Promise.resolve({
+                data: { created_by: "editor-1", status: "draft" },
+                error: null,
+              }),
+          }),
         }),
-      }),
+      });
+      const eqUpdate = vi.fn().mockResolvedValue({ error: null });
+      supabaseFrom.mockReturnValueOnce({
+        update: () => ({ eq: eqUpdate }),
+      });
+      // # WHEN
+      await updatePost("post-1", { label: "Renamed" });
+      // # THEN
+      expect(eqUpdate).toHaveBeenCalledWith("id", "post-1");
     });
-    const eqUpdate = vi.fn().mockResolvedValue({ error: null });
-    supabaseFrom.mockReturnValueOnce({
-      update: () => ({ eq: eqUpdate }),
-    });
-
-    await updatePost("post-1", { label: "Renamed" });
-    expect(eqUpdate).toHaveBeenCalledWith("id", "post-1");
   });
 
-  it("throws when fetching the post fails", async () => {
-    vi.mocked(requireEditorOrAdmin).mockResolvedValue({
-      // biome-ignore lint/suspicious/noExplicitAny: test fixture
-      user: { id: "editor-1" } as any,
-      roles: ["editor"],
-    });
-    supabaseFrom.mockReturnValueOnce({
-      select: () => ({
-        eq: () => ({
-          single: () =>
-            Promise.resolve({ data: null, error: { message: "x" } }),
+  describe("when the ownership lookup fails", () => {
+    it("throws Post not found", async () => {
+      // # GIVEN
+      vi.mocked(requireEditorOrAdmin).mockResolvedValue({
+        // biome-ignore lint/suspicious/noExplicitAny: test fixture
+        user: { id: "editor-1" } as any,
+        roles: ["editor"],
+      });
+      supabaseFrom.mockReturnValueOnce({
+        select: () => ({
+          eq: () => ({
+            single: () =>
+              Promise.resolve({ data: null, error: { message: "x" } }),
+          }),
         }),
-      }),
+      });
+      // # WHEN / # THEN
+      await expect(updatePost("post-1", { label: "x" })).rejects.toThrow(
+        "Post not found",
+      );
     });
-    await expect(updatePost("post-1", { label: "x" })).rejects.toThrow(
-      "Post not found",
-    );
   });
 });
-
-// ---------- publishPost / unpublishPost / deletePost / restorePost ----------
 
 describe("admin-only post actions", () => {
   function mockAdmin() {
@@ -219,37 +239,55 @@ describe("admin-only post actions", () => {
     return { update, eq };
   }
 
-  it("publishPost sets status=published", async () => {
-    mockAdmin();
-    const { update, eq } = mockUpdateChain();
-    await publishPost("p1");
-    expect(update).toHaveBeenCalledWith({ status: "published" });
-    expect(eq).toHaveBeenCalledWith("id", "p1");
+  describe("when an admin publishes a post", () => {
+    it("sets status=published on that post", async () => {
+      // # GIVEN
+      mockAdmin();
+      const { update, eq } = mockUpdateChain();
+      // # WHEN
+      await publishPost("p1");
+      // # THEN
+      expect(update).toHaveBeenCalledWith({ status: "published" });
+      expect(eq).toHaveBeenCalledWith("id", "p1");
+    });
   });
 
-  it("unpublishPost sets status=draft", async () => {
-    mockAdmin();
-    const { update } = mockUpdateChain();
-    await unpublishPost("p1");
-    expect(update).toHaveBeenCalledWith({ status: "draft" });
+  describe("when an admin unpublishes a post", () => {
+    it("sets status=draft on that post", async () => {
+      // # GIVEN
+      mockAdmin();
+      const { update } = mockUpdateChain();
+      // # WHEN
+      await unpublishPost("p1");
+      // # THEN
+      expect(update).toHaveBeenCalledWith({ status: "draft" });
+    });
   });
 
-  it("deletePost soft-deletes by setting is_deleted=true", async () => {
-    mockAdmin();
-    const { update } = mockUpdateChain();
-    await deletePost("p1");
-    expect(update).toHaveBeenCalledWith({ is_deleted: true });
+  describe("when an admin deletes a post", () => {
+    it("soft-deletes by setting is_deleted=true", async () => {
+      // # GIVEN
+      mockAdmin();
+      const { update } = mockUpdateChain();
+      // # WHEN
+      await deletePost("p1");
+      // # THEN
+      expect(update).toHaveBeenCalledWith({ is_deleted: true });
+    });
   });
 
-  it("restorePost sets is_deleted=false", async () => {
-    mockAdmin();
-    const { update } = mockUpdateChain();
-    await restorePost("p1");
-    expect(update).toHaveBeenCalledWith({ is_deleted: false });
+  describe("when an admin restores a soft-deleted post", () => {
+    it("sets is_deleted=false", async () => {
+      // # GIVEN
+      mockAdmin();
+      const { update } = mockUpdateChain();
+      // # WHEN
+      await restorePost("p1");
+      // # THEN
+      expect(update).toHaveBeenCalledWith({ is_deleted: false });
+    });
   });
 });
-
-// ---------- promoteUser ----------
 
 describe("promoteUser", () => {
   function mockAdmin() {
@@ -259,13 +297,6 @@ describe("promoteUser", () => {
       roles: ["admin"],
     });
   }
-
-  it("rejects an empty email", async () => {
-    mockAdmin();
-    await expect(promoteUser("   ", "editor")).rejects.toThrow(
-      "Email is required",
-    );
-  });
 
   function mockProfileLookup(
     profile: { id: string } | null,
@@ -280,60 +311,81 @@ describe("promoteUser", () => {
     });
   }
 
-  it("rejects an unknown email", async () => {
-    mockAdmin();
-    mockProfileLookup(null);
-    await expect(promoteUser("missing@example.com", "editor")).rejects.toThrow(
-      /No user found with email/,
-    );
+  describe("when called with a blank email", () => {
+    it("throws Email is required", async () => {
+      // # GIVEN
+      mockAdmin();
+      // # WHEN / # THEN
+      await expect(promoteUser("   ", "editor")).rejects.toThrow(
+        "Email is required",
+      );
+    });
   });
 
-  it("throws when the profile lookup errors", async () => {
-    mockAdmin();
-    mockProfileLookup(null, { message: "db down" });
-    await expect(promoteUser("a@b.com", "editor")).rejects.toThrow("db down");
+  describe("when no profile matches the given email", () => {
+    it("throws No user found", async () => {
+      // # GIVEN
+      mockAdmin();
+      mockProfileLookup(null);
+      // # WHEN / # THEN
+      await expect(
+        promoteUser("missing@example.com", "editor"),
+      ).rejects.toThrow(/No user found with email/);
+    });
   });
 
-  it("looks up by normalized (lowercase) email and upserts the role", async () => {
-    mockAdmin();
-
-    const eqProfile = vi.fn().mockReturnValue({
-      maybeSingle: () => Promise.resolve({ data: { id: "u2" }, error: null }),
+  describe("when the profile lookup errors", () => {
+    it("surfaces the database error", async () => {
+      // # GIVEN
+      mockAdmin();
+      mockProfileLookup(null, { message: "db down" });
+      // # WHEN / # THEN
+      await expect(promoteUser("a@b.com", "editor")).rejects.toThrow("db down");
     });
-    supabaseFrom.mockReturnValueOnce({
-      select: () => ({ eq: eqProfile }),
+  });
+
+  describe("when the email has whitespace and mixed case", () => {
+    it("normalises it and upserts the role row", async () => {
+      // # GIVEN
+      mockAdmin();
+      const eqProfile = vi.fn().mockReturnValue({
+        maybeSingle: () => Promise.resolve({ data: { id: "u2" }, error: null }),
+      });
+      supabaseFrom.mockReturnValueOnce({
+        select: () => ({ eq: eqProfile }),
+      });
+      const upsert = vi.fn().mockResolvedValue({ error: null });
+      supabaseFrom.mockReturnValueOnce({ upsert });
+      // # WHEN
+      await promoteUser("  TARGET@example.com  ", "editor");
+      // # THEN
+      expect(eqProfile).toHaveBeenCalledWith("email", "target@example.com");
+      expect(upsert).toHaveBeenCalledWith(
+        { user_id: "u2", role: "editor" },
+        expect.objectContaining({ onConflict: "user_id,role" }),
+      );
     });
-
-    const upsert = vi.fn().mockResolvedValue({ error: null });
-    supabaseFrom.mockReturnValueOnce({ upsert });
-
-    await promoteUser("  TARGET@example.com  ", "editor");
-
-    expect(eqProfile).toHaveBeenCalledWith("email", "target@example.com");
-    expect(upsert).toHaveBeenCalledWith(
-      { user_id: "u2", role: "editor" },
-      expect.objectContaining({ onConflict: "user_id,role" }),
-    );
   });
 });
 
-// ---------- demoteUser ----------
-
 describe("demoteUser", () => {
-  it("deletes the specific user_role row", async () => {
-    vi.mocked(requireAdmin).mockResolvedValue({
-      // biome-ignore lint/suspicious/noExplicitAny: test fixture
-      user: { id: "admin-1" } as any,
-      roles: ["admin"],
+  describe("when an admin demotes a user from a specific role", () => {
+    it("deletes only the matching user_roles row", async () => {
+      // # GIVEN
+      vi.mocked(requireAdmin).mockResolvedValue({
+        // biome-ignore lint/suspicious/noExplicitAny: test fixture
+        user: { id: "admin-1" } as any,
+        roles: ["admin"],
+      });
+      const eqRole = vi.fn().mockResolvedValue({ error: null });
+      const eqUser = vi.fn().mockReturnValue({ eq: eqRole });
+      const del = vi.fn().mockReturnValue({ eq: eqUser });
+      supabaseFrom.mockReturnValue({ delete: del });
+      // # WHEN
+      await demoteUser("user-2", "editor");
+      // # THEN
+      expect(eqUser).toHaveBeenCalledWith("user_id", "user-2");
+      expect(eqRole).toHaveBeenCalledWith("role", "editor");
     });
-    const eqRole = vi.fn().mockResolvedValue({ error: null });
-    const eqUser = vi.fn().mockReturnValue({ eq: eqRole });
-    const del = vi.fn().mockReturnValue({ eq: eqUser });
-    supabaseFrom.mockReturnValue({ delete: del });
-
-    await demoteUser("user-2", "editor");
-
-    expect(eqUser).toHaveBeenCalledWith("user_id", "user-2");
-    expect(eqRole).toHaveBeenCalledWith("role", "editor");
   });
 });
