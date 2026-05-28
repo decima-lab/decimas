@@ -7,8 +7,15 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isAdminRoute = request.nextUrl.pathname.startsWith("/admin");
-  const isLoginRoute = request.nextUrl.pathname.startsWith("/login");
+  const { pathname } = request.nextUrl;
+  const isAdminRoute = pathname.startsWith("/admin");
+  const isLoginRoute = pathname.startsWith("/login");
+  const isAuthCallback = pathname.startsWith("/auth/callback");
+  const isResetPassword = pathname.startsWith("/reset-password");
+
+  if (isAuthCallback || isResetPassword) {
+    return supabaseResponse;
+  }
 
   if (isAdminRoute && !user) {
     return NextResponse.redirect(
