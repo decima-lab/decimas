@@ -35,7 +35,9 @@ const samplePost: AdminPost = {
   status: "published",
   created_by: "user-1",
   category: { id: "c1", label: "Freelancing" },
-  post_tag_mapping: [{ tag: { id: "t1", label: "Global" } }],
+  post_tag_mapping: [
+    { tag: { id: "t1", label: "Global", category: "Location" } },
+  ],
 };
 
 describe("getAllPosts", () => {
@@ -94,7 +96,7 @@ describe("getAllPosts", () => {
         "created_by",
         "is_deleted",
         "category(id, label)",
-        "post_tag_mapping(tag(id, label))",
+        "post_tag_mapping(tag(id, label, category))",
       ]) {
         expect(cols).toContain(col);
       }

@@ -1,5 +1,6 @@
 "use server";
 
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -90,23 +91,59 @@ export type PostInput = {
   categoryId?: string | null;
   isVerified?: boolean;
   isGlobal?: boolean;
+  // When provided, replaces the post's tag set. Omit to leave tags untouched.
+  tagIds?: string[];
 };
+
+// Replace a post's tag mappings with the given tag ids.
+async function syncPostTags(
+  supabase: SupabaseClient,
+  postId: string,
+  tagIds: string[],
+) {
+  const { error: deleteErr } = await supabase
+    .from("post_tag_mapping")
+    .delete()
+    .eq("post_id", postId);
+  if (deleteErr) throw new Error(deleteErr.message);
+
+  if (tagIds.length === 0) return;
+
+  const { error: insertErr } = await supabase
+    .from("post_tag_mapping")
+    .insert(tagIds.map((tagId) => ({ post_id: postId, tag_id: tagId })));
+  if (insertErr) throw new Error(insertErr.message);
+}
 
 export async function createPost(input: PostInput) {
   const { user } = await requireEditorOrAdmin();
   const supabase = createClient(await cookies());
 
-  const { error } = await supabase.from("post").insert({
+  const row = {
     label: input.label,
     description: input.description ?? null,
     link: input.link ?? null,
     category: input.categoryId ?? null,
     is_verified: input.isVerified ?? false,
     is_global: input.isGlobal ?? false,
-    status: "draft",
+    status: "draft" as const,
     created_by: user.id,
-  });
-  if (error) throw new Error(error.message);
+  };
+
+  if (input.tagIds && input.tagIds.length > 0) {
+    const { data: created, error } = await supabase
+      .from("post")
+      .insert(row)
+      .select("id")
+      .single();
+    if (error || !created) {
+      throw new Error(error?.message ?? "Failed to create post");
+    }
+    await syncPostTags(supabase, created.id, input.tagIds);
+  } else {
+    const { error } = await supabase.from("post").insert(row);
+    if (error) throw new Error(error.message);
+  }
   revalidatePath("/admin");
 }
 
@@ -143,6 +180,10 @@ export async function updatePost(id: string, input: PostInput) {
     })
     .eq("id", id);
   if (error) throw new Error(error.message);
+
+  if (input.tagIds !== undefined) {
+    await syncPostTags(supabase, id, input.tagIds);
+  }
   revalidatePath("/admin");
 }
 

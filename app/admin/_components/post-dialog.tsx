@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -24,14 +24,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { createPost, type PostInput, updatePost } from "@/lib/actions";
 import type { AdminPost } from "@/lib/posts";
 import { toast } from "@/lib/toast";
+import { cn } from "@/lib/utils";
 
 type Category = { id: string; label: string };
+type Tag = { id: string; label: string; category: string | null };
 
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   post: AdminPost | null;
   categories: Category[];
+  tags: Tag[];
   isAdmin: boolean;
 };
 
@@ -42,6 +45,7 @@ export function PostDialog({
   onOpenChange,
   post,
   categories,
+  tags,
   isAdmin,
 }: Props) {
   const router = useRouter();
@@ -53,6 +57,7 @@ export function PostDialog({
   const [categoryId, setCategoryId] = useState<string>(UNCATEGORISED);
   const [isVerified, setIsVerified] = useState(false);
   const [isGlobal, setIsGlobal] = useState(false);
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
 
   // Reset form when dialog opens / post changes
   useEffect(() => {
@@ -63,8 +68,27 @@ export function PostDialog({
       setCategoryId(post?.category?.id ?? UNCATEGORISED);
       setIsVerified(post?.is_verified ?? false);
       setIsGlobal(post?.is_global ?? false);
+      setSelectedTagIds(post?.post_tag_mapping.map((m) => m.tag.id) ?? []);
     }
   }, [open, post]);
+
+  // Group the predefined tags by their category for the picker.
+  const tagGroups = useMemo(() => {
+    const map = new Map<string, Tag[]>();
+    for (const tag of tags) {
+      const key = tag.category ?? "Other";
+      const list = map.get(key) ?? [];
+      list.push(tag);
+      map.set(key, list);
+    }
+    return Array.from(map, ([category, items]) => ({ category, items }));
+  }, [tags]);
+
+  function toggleTag(id: string) {
+    setSelectedTagIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  }
 
   const isEditing = post !== null;
 
@@ -82,6 +106,7 @@ export function PostDialog({
       categoryId: categoryId === UNCATEGORISED ? null : categoryId,
       isVerified,
       isGlobal,
+      tagIds: selectedTagIds,
     };
 
     startTransition(async () => {
@@ -173,6 +198,42 @@ export function PostDialog({
               </SelectContent>
             </Select>
           </div>
+
+          {tagGroups.length > 0 && (
+            <div className="space-y-3">
+              <Label>Tags</Label>
+              <div className="space-y-3">
+                {tagGroups.map(({ category, items }) => (
+                  <div key={category} className="space-y-1.5">
+                    <div className="text-xs font-medium text-muted-foreground">
+                      {category}
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {items.map((tag) => {
+                        const selected = selectedTagIds.includes(tag.id);
+                        return (
+                          <button
+                            key={tag.id}
+                            type="button"
+                            onClick={() => toggleTag(tag.id)}
+                            aria-pressed={selected}
+                            className={cn(
+                              "rounded-full border px-2.5 py-1 text-xs transition-colors",
+                              selected
+                                ? "border-primary bg-primary text-primary-foreground"
+                                : "border-input text-muted-foreground hover:border-foreground/30 hover:text-foreground",
+                            )}
+                          >
+                            {tag.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {isAdmin && (
             <div className="flex gap-6 pt-1">

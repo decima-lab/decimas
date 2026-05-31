@@ -12,7 +12,9 @@ export type AdminPost = {
   status: "draft" | "published";
   created_by: string | null;
   category: { id: string; label: string } | null;
-  post_tag_mapping: { tag: { id: string; label: string } }[];
+  post_tag_mapping: {
+    tag: { id: string; label: string; category: string | null };
+  }[];
 };
 
 export async function getAllPosts(
@@ -21,7 +23,7 @@ export async function getAllPosts(
   const { data, error } = await supabase
     .from("post")
     .select(
-      "id, label, description, link, logo_url, is_verified, is_global, is_deleted, status, created_by, category(id, label), post_tag_mapping(tag(id, label))",
+      "id, label, description, link, logo_url, is_verified, is_global, is_deleted, status, created_by, category(id, label), post_tag_mapping(tag(id, label, category))",
     )
     .order("status", { ascending: true })
     .order("label");
