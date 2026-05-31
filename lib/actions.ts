@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { type Role, requireAdmin, requireEditorOrAdmin } from "@/lib/auth";
 import { createClient } from "@/utils/supabase/server";
@@ -35,6 +35,50 @@ export async function signOut() {
   const supabase = createClient(await cookies());
   await supabase.auth.signOut();
   redirect("/");
+}
+
+export type PasswordResetState = { error: string } | { success: true } | null;
+
+export async function requestPasswordReset(
+  _prevState: PasswordResetState,
+  formData: FormData,
+): Promise<{ error: string } | { success: true }> {
+  const email = (formData.get("email") as string | null)?.trim() ?? "";
+  if (!email) return { error: "Email is required" };
+
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
+  const proto = h.get("x-forwarded-proto") ?? "http";
+  const origin = `${proto}://${host}`;
+
+  const supabase = createClient(await cookies());
+  await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${origin}/auth/callback?next=/reset-password`,
+  });
+
+  return { success: true };
+}
+
+export async function resetPassword(
+  _prevState: { error: string } | null,
+  formData: FormData,
+) {
+  const password = (formData.get("password") as string | null) ?? "";
+  const confirm = (formData.get("confirmPassword") as string | null) ?? "";
+
+  if (password.length < 8) {
+    return { error: "Password must be at least 8 characters" };
+  }
+  if (password !== confirm) {
+    return { error: "Passwords do not match" };
+  }
+
+  const supabase = createClient(await cookies());
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) return { error: error.message };
+
+  await supabase.auth.signOut();
+  redirect("/login?reset=success");
 }
 
 // ---------- Posts ----------

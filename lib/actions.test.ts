@@ -2,8 +2,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
+const mockHeadersGet = vi.fn();
+
 vi.mock("next/headers", () => ({
   cookies: vi.fn().mockResolvedValue({}),
+  headers: vi.fn().mockResolvedValue({ get: mockHeadersGet }),
 }));
 
 vi.mock("next/cache", () => ({
@@ -15,14 +18,17 @@ vi.mock("next/navigation", () => ({
 }));
 
 const supabaseFrom = vi.fn();
+const supabaseAuth = {
+  getUser: vi.fn(),
+  signOut: vi.fn(),
+  signInWithPassword: vi.fn(),
+  resetPasswordForEmail: vi.fn(),
+  updateUser: vi.fn(),
+};
 
 vi.mock("@/utils/supabase/server", () => ({
   createClient: () => ({
-    auth: {
-      getUser: vi.fn(),
-      signOut: vi.fn(),
-      signInWithPassword: vi.fn(),
-    },
+    auth: supabaseAuth,
     from: supabaseFrom,
   }),
 }));
@@ -32,6 +38,7 @@ vi.mock("@/lib/auth", () => ({
   requireEditorOrAdmin: vi.fn(),
 }));
 
+const { redirect } = await import("next/navigation");
 const { requireAdmin, requireEditorOrAdmin } = await import("./auth");
 const {
   createPost,
@@ -42,6 +49,8 @@ const {
   unpublishPost,
   promoteUser,
   demoteUser,
+  requestPasswordReset,
+  resetPassword,
 } = await import("./actions");
 
 beforeEach(() => {
@@ -386,6 +395,129 @@ describe("demoteUser", () => {
       // # THEN
       expect(eqUser).toHaveBeenCalledWith("user_id", "user-2");
       expect(eqRole).toHaveBeenCalledWith("role", "editor");
+    });
+  });
+});
+
+describe("requestPasswordReset", () => {
+  describe("when called with a blank email", () => {
+    it("returns an Email is required error", async () => {
+      // # GIVEN
+      const formData = new FormData();
+      formData.set("email", "   ");
+      // # WHEN
+      const result = await requestPasswordReset(null, formData);
+      // # THEN
+      expect(result).toEqual({ error: "Email is required" });
+      expect(supabaseAuth.resetPasswordForEmail).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("when called with a valid email", () => {
+    it("calls resetPasswordForEmail with the auth callback as redirectTo", async () => {
+      // # GIVEN
+      mockHeadersGet.mockImplementation((key: string) => {
+        if (key === "host") return "example.com";
+        if (key === "x-forwarded-proto") return "https";
+        return null;
+      });
+      supabaseAuth.resetPasswordForEmail.mockResolvedValue({ error: null });
+      const formData = new FormData();
+      formData.set("email", "user@example.com");
+      // # WHEN
+      const result = await requestPasswordReset(null, formData);
+      // # THEN
+      expect(supabaseAuth.resetPasswordForEmail).toHaveBeenCalledWith(
+        "user@example.com",
+        {
+          redirectTo: "https://example.com/auth/callback?next=/reset-password",
+        },
+      );
+      expect(result).toEqual({ success: true });
+    });
+  });
+
+  describe("when Supabase returns an error", () => {
+    it("still returns success so the response cannot be used to enumerate emails", async () => {
+      // # GIVEN
+      mockHeadersGet.mockReturnValue("example.com");
+      supabaseAuth.resetPasswordForEmail.mockResolvedValue({
+        error: { message: "user not found" },
+      });
+      const formData = new FormData();
+      formData.set("email", "unknown@example.com");
+      // # WHEN
+      const result = await requestPasswordReset(null, formData);
+      // # THEN
+      expect(result).toEqual({ success: true });
+    });
+  });
+});
+
+describe("resetPassword", () => {
+  describe("when the new password is shorter than 8 characters", () => {
+    it("returns a length error and does not call Supabase", async () => {
+      // # GIVEN
+      const formData = new FormData();
+      formData.set("password", "short");
+      formData.set("confirmPassword", "short");
+      // # WHEN
+      const result = await resetPassword(null, formData);
+      // # THEN
+      expect(result).toEqual({
+        error: "Password must be at least 8 characters",
+      });
+      expect(supabaseAuth.updateUser).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("when the password and confirmation do not match", () => {
+    it("returns a mismatch error and does not call Supabase", async () => {
+      // # GIVEN
+      const formData = new FormData();
+      formData.set("password", "validpass1");
+      formData.set("confirmPassword", "differentpass1");
+      // # WHEN
+      const result = await resetPassword(null, formData);
+      // # THEN
+      expect(result).toEqual({ error: "Passwords do not match" });
+      expect(supabaseAuth.updateUser).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("when Supabase rejects the new password", () => {
+    it("surfaces the Supabase error message", async () => {
+      // # GIVEN
+      supabaseAuth.updateUser.mockResolvedValue({
+        error: { message: "password is too weak" },
+      });
+      const formData = new FormData();
+      formData.set("password", "validpass1");
+      formData.set("confirmPassword", "validpass1");
+      // # WHEN
+      const result = await resetPassword(null, formData);
+      // # THEN
+      expect(result).toEqual({ error: "password is too weak" });
+      expect(supabaseAuth.signOut).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("when the new password is valid", () => {
+    it("updates the password, signs out, and redirects to /login?reset=success", async () => {
+      // # GIVEN
+      supabaseAuth.updateUser.mockResolvedValue({ error: null });
+      supabaseAuth.signOut.mockResolvedValue({ error: null });
+      const formData = new FormData();
+      formData.set("password", "validpass1");
+      formData.set("confirmPassword", "validpass1");
+      // # WHEN
+      await resetPassword(null, formData);
+      // # THEN
+      expect(supabaseAuth.updateUser).toHaveBeenCalledWith({
+        password: "validpass1",
+      });
+      expect(supabaseAuth.signOut).toHaveBeenCalled();
+      expect(redirect).toHaveBeenCalledWith("/login?reset=success");
     });
   });
 });

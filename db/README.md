@@ -172,3 +172,35 @@ Browser → POST /admin (with auth cookie)
 ```
 
 For an unauthenticated request, `auth.uid()` returns `null`, `private.is_admin()` returns `false`, and the write is rejected by Postgres before it ever executes.
+
+### Allowing the password reset redirect URL
+
+The "Forgot password?" flow calls `supabase.auth.resetPasswordForEmail(email, { redirectTo: "${origin}/auth/callback?next=/reset-password" })`. For security, Supabase only honors that `redirectTo` if the URL is on the project's allowlist — otherwise the reset email link sends users to Supabase's default page (or an error) instead of our `/reset-password` form.
+
+Each Supabase project keeps its own list, so you'll need to set this once per project (dev and prod).
+
+1. Open the project in https://supabase.com/dashboard.
+2. **Authentication → URL Configuration**.
+3. Under **Redirect URLs**, add the project's `auth/callback` URL:
+   - Dev project: `http://localhost:3000/auth/callback`
+   - Prod project: `https://<your-domain>/auth/callback`
+4. Save.
+
+If a reset email lands on a Supabase error page or bounces to the default Site URL, this allowlist is the first thing to check.
+
+### Sending auth emails (default vs. custom SMTP)
+
+By default, every Supabase project sends auth emails (reset password, confirm signup, etc.) through Supabase's built-in SMTP. No setup needed — but it has two limitations worth knowing:
+
+1. **Rate-limited.** The built-in SMTP caps auth emails at a few per hour per project. Fine for dev, not for real traffic.
+2. **Sender is Supabase's domain.** Emails come from `noreply@mail.app.supabase.io` rather than `noreply@<your-domain>`, which hurts trust and deliverability.
+
+**Dev project:** leave the default in place. Nothing to configure.
+
+**Prod project:** before going live, switch to a custom SMTP provider so emails come from your domain and aren't rate-limited.
+
+1. Pick a provider (Resend is the easiest — has a Supabase integration guide; SendGrid, Postmark, Mailgun, and Amazon SES all work too).
+2. At the provider, verify your sending domain by adding their SPF/DKIM DNS records. This is what makes emails appear as "from `noreply@<your-domain>`" without landing in spam.
+3. In the Supabase dashboard → **Authentication → Emails → SMTP Settings**, enable custom SMTP and paste in the provider's host / port / username / password.
+
+**Customising the email body.** Independent of SMTP — open **Authentication → Emails → Templates** in the dashboard and edit the "Reset Password" template (subject, HTML body, link text). Works with both the default and custom SMTP.
