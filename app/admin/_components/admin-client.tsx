@@ -1,20 +1,27 @@
 "use client";
 
 import {
+  ArrowDownIcon,
+  ArrowUpIcon,
   CheckCircle2Icon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ChevronsUpDownIcon,
   FileTextIcon,
   LogOutIcon,
   MoreHorizontalIcon,
   PencilIcon,
   PlusIcon,
   RotateCcwIcon,
+  SearchIcon,
   SendIcon,
   Trash2Icon,
   UndoIcon,
   UsersIcon,
+  XIcon,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -75,7 +82,7 @@ import { toast } from "@/lib/toast";
 import { PostDialog } from "./post-dialog";
 
 type Category = { id: string; label: string };
-type Tag = { id: string; label: string };
+type Tag = { id: string; label: string; category: string | null };
 type AdminUser = { id: string; email: string; roles: string[] };
 
 type Props = {
@@ -90,16 +97,15 @@ type Props = {
     published: number;
     editorCount: number;
   };
-  authors: Record<string, string>;
 };
 
 export function AdminClient({
   currentUser,
   posts,
   categories,
+  tags,
   users,
   metrics,
-  authors,
 }: Props) {
   return (
     <div className="min-h-svh bg-background">
@@ -120,7 +126,7 @@ export function AdminClient({
             <PostsPanel
               posts={posts}
               categories={categories}
-              authors={authors}
+              tags={tags}
               currentUser={currentUser}
             />
           </TabsContent>
@@ -240,15 +246,53 @@ function MetricCard({
 
 // ---------- Posts panel ----------
 
+const PAGE_SIZE = 25;
+const ALL = "all";
+
+type StatusFilter = "active" | "draft" | "published" | "deleted";
+type SortKey = "title" | "category" | "status";
+type SortDir = "asc" | "desc";
+
+const STATUS_LABELS: Record<StatusFilter, string> = {
+  active: "Active",
+  draft: "Drafts",
+  published: "Published",
+  deleted: "Deleted",
+};
+
+function matchesStatus(post: AdminPost, status: StatusFilter): boolean {
+  switch (status) {
+    case "active":
+      return !post.is_deleted;
+    case "draft":
+      return !post.is_deleted && post.status === "draft";
+    case "published":
+      return !post.is_deleted && post.status === "published";
+    case "deleted":
+      return post.is_deleted;
+  }
+}
+
+function comparePosts(a: AdminPost, b: AdminPost, key: SortKey): number {
+  switch (key) {
+    case "title":
+      return a.label.localeCompare(b.label);
+    case "category":
+      return (a.category?.label ?? "").localeCompare(b.category?.label ?? "");
+    case "status":
+      return a.status.localeCompare(b.status);
+  }
+}
+
 function PostsPanel({
   posts,
   categories,
-  authors,
+  tags,
   currentUser,
 }: {
   posts: AdminPost[];
   categories: Category[];
-  authors: Record<string, string>;
+  tags: Tag[];
   currentUser: Props["currentUser"];
 }) {
   const router = useRouter();
@@ -257,8 +301,90 @@ function PostsPanel({
   const [editingPost, setEditingPost] = useState<AdminPost | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
-  const visiblePosts = posts;
-  const deleteTarget = visiblePosts.find((p) => p.id === pendingDeleteId);
+  // ---- Filter + sort + pagination state ----
+  const [search, setSearch] = useState("");
+  const [categoryId, setCategoryId] = useState<string>(ALL);
+  const [status, setStatus] = useState<StatusFilter>("active");
+  const [tagId, setTagId] = useState<string>(ALL);
+  const [verifiedOnly, setVerifiedOnly] = useState(false);
+  const [sortKey, setSortKey] = useState<SortKey>("title");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const [page, setPage] = useState(0);
+
+  const hasActiveFilters =
+    search.trim() !== "" ||
+    categoryId !== ALL ||
+    status !== "active" ||
+    tagId !== ALL ||
+    verifiedOnly;
+
+  function clearFilters() {
+    setSearch("");
+    setCategoryId(ALL);
+    setStatus("active");
+    setTagId(ALL);
+    setVerifiedOnly(false);
+  }
+
+  function toggleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  }
+
+  const filteredPosts = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    const result = posts.filter((post) => {
+      if (!matchesStatus(post, status)) return false;
+      if (query && !post.label.toLowerCase().includes(query)) return false;
+      if (categoryId !== ALL && post.category?.id !== categoryId) return false;
+      if (
+        tagId !== ALL &&
+        !post.post_tag_mapping.some((m) => m.tag.id === tagId)
+      ) {
+        return false;
+      }
+      if (verifiedOnly && !post.is_verified) return false;
+      return true;
+    });
+    result.sort((a, b) => {
+      const cmp = comparePosts(a, b, sortKey);
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+    return result;
+  }, [
+    posts,
+    search,
+    status,
+    categoryId,
+    tagId,
+    verifiedOnly,
+    sortKey,
+    sortDir,
+  ]);
+
+  const pageCount = Math.max(1, Math.ceil(filteredPosts.length / PAGE_SIZE));
+
+  // Keep the page in range when filters shrink the result set.
+  useEffect(() => {
+    setPage((p) => Math.min(p, pageCount - 1));
+  }, [pageCount]);
+
+  // Reset to the first page whenever the filtered/sorted set changes.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset on filter changes
+  useEffect(() => {
+    setPage(0);
+  }, [search, status, categoryId, tagId, verifiedOnly, sortKey, sortDir]);
+
+  const pagePosts = filteredPosts.slice(
+    page * PAGE_SIZE,
+    page * PAGE_SIZE + PAGE_SIZE,
+  );
+
+  const deleteTarget = posts.find((p) => p.id === pendingDeleteId);
 
   function openNew() {
     setEditingPost(null);
@@ -302,7 +428,7 @@ function PostsPanel({
           </Button>
         </CardHeader>
         <CardContent className="p-0">
-          {visiblePosts.length === 0 ? (
+          {posts.length === 0 ? (
             <EmptyState
               icon={<FileTextIcon className="size-8 text-muted-foreground" />}
               title="No posts yet"
@@ -315,45 +441,102 @@ function PostsPanel({
               }
             />
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Author</TableHead>
-                    <TableHead className="w-[1%]"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {visiblePosts.map((post) => (
-                    <PostRow
-                      key={post.id}
-                      post={post}
-                      authors={authors}
-                      isAdmin={currentUser.isAdmin}
-                      currentUserId={currentUser.id}
-                      pending={pending}
-                      onEdit={openEdit}
-                      onPublish={(id) =>
-                        runAction(() => publishPost(id), "Post published")
-                      }
-                      onUnpublish={(id) =>
-                        runAction(
-                          () => unpublishPost(id),
-                          "Moved back to drafts",
-                        )
-                      }
-                      onDelete={(id) => setPendingDeleteId(id)}
-                      onRestore={(id) =>
-                        runAction(() => restorePost(id), "Post restored")
-                      }
-                    />
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+            <>
+              <PostFilters
+                search={search}
+                onSearchChange={setSearch}
+                categoryId={categoryId}
+                onCategoryChange={setCategoryId}
+                categories={categories}
+                status={status}
+                onStatusChange={setStatus}
+                tagId={tagId}
+                onTagChange={setTagId}
+                tags={tags}
+                verifiedOnly={verifiedOnly}
+                onVerifiedOnlyChange={setVerifiedOnly}
+                hasActiveFilters={hasActiveFilters}
+                onClear={clearFilters}
+              />
+              {filteredPosts.length === 0 ? (
+                <EmptyState
+                  icon={<SearchIcon className="size-8 text-muted-foreground" />}
+                  title="No posts match your filters"
+                  description="Try adjusting or clearing the filters above."
+                  action={
+                    <Button onClick={clearFilters} size="sm" variant="outline">
+                      <XIcon className="size-4" />
+                      Clear filters
+                    </Button>
+                  }
+                />
+              ) : (
+                <>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <SortableHead
+                            label="Title"
+                            sortKey="title"
+                            activeKey={sortKey}
+                            dir={sortDir}
+                            onSort={toggleSort}
+                          />
+                          <SortableHead
+                            label="Category"
+                            sortKey="category"
+                            activeKey={sortKey}
+                            dir={sortDir}
+                            onSort={toggleSort}
+                          />
+                          <SortableHead
+                            label="Status"
+                            sortKey="status"
+                            activeKey={sortKey}
+                            dir={sortDir}
+                            onSort={toggleSort}
+                          />
+                          <TableHead className="w-[1%]"></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {pagePosts.map((post) => (
+                          <PostRow
+                            key={post.id}
+                            post={post}
+                            isAdmin={currentUser.isAdmin}
+                            currentUserId={currentUser.id}
+                            pending={pending}
+                            onEdit={openEdit}
+                            onPublish={(id) =>
+                              runAction(() => publishPost(id), "Post published")
+                            }
+                            onUnpublish={(id) =>
+                              runAction(
+                                () => unpublishPost(id),
+                                "Moved back to drafts",
+                              )
+                            }
+                            onDelete={(id) => setPendingDeleteId(id)}
+                            onRestore={(id) =>
+                              runAction(() => restorePost(id), "Post restored")
+                            }
+                          />
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                  <PostsPagination
+                    page={page}
+                    pageCount={pageCount}
+                    total={filteredPosts.length}
+                    pageSize={PAGE_SIZE}
+                    onPageChange={setPage}
+                  />
+                </>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
@@ -363,6 +546,7 @@ function PostsPanel({
         onOpenChange={setDialogOpen}
         post={editingPost}
         categories={categories}
+        tags={tags}
         isAdmin={currentUser.isAdmin}
       />
 
@@ -403,7 +587,6 @@ function PostsPanel({
 
 function PostRow({
   post,
-  authors,
   isAdmin,
   currentUserId,
   pending,
@@ -414,7 +597,6 @@ function PostRow({
   onRestore,
 }: {
   post: AdminPost;
-  authors: Record<string, string>;
   isAdmin: boolean;
   currentUserId: string;
   pending: boolean;
@@ -424,13 +606,17 @@ function PostRow({
   onDelete: (id: string) => void;
   onRestore: (id: string) => void;
 }) {
-  const author =
-    post.created_by === null
-      ? "—"
-      : (authors[post.created_by] ?? `${post.created_by.slice(0, 8)}…`);
+  const isOwn = post.created_by === currentUserId;
+  const canEdit = isAdmin || (isOwn && post.status === "draft");
 
-  const canEdit =
-    isAdmin || (post.created_by === currentUserId && post.status === "draft");
+  // For editors, show Edit greyed-out with the reason instead of hiding it,
+  // so it's clear why a non-draft (or someone else's post) can't be edited.
+  const editDisabledReason =
+    canEdit || post.is_deleted
+      ? null
+      : isOwn
+        ? "Only drafts can be edited"
+        : "You can only edit your own posts";
 
   return (
     <TableRow
@@ -456,7 +642,6 @@ function PostRow({
       <TableCell>
         <StatusBadge status={post.status} isDeleted={post.is_deleted} />
       </TableCell>
-      <TableCell className="text-muted-foreground text-sm">{author}</TableCell>
       <TableCell>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -476,6 +661,14 @@ function PostRow({
                 <PencilIcon className="size-4" />
                 Edit
               </DropdownMenuItem>
+            )}
+            {editDisabledReason && (
+              <div title={editDisabledReason} className="cursor-not-allowed">
+                <DropdownMenuItem disabled>
+                  <PencilIcon className="size-4" />
+                  Edit
+                </DropdownMenuItem>
+              </div>
             )}
             {isAdmin && !post.is_deleted && post.status === "draft" && (
               <DropdownMenuItem onClick={() => onPublish(post.id)}>
@@ -544,6 +737,230 @@ function StatusBadge({
       <span className="size-1.5 rounded-full bg-amber-500 mr-1.5" />
       Draft
     </Badge>
+  );
+}
+
+// ---------- Posts filters ----------
+
+function PostFilters({
+  search,
+  onSearchChange,
+  categoryId,
+  onCategoryChange,
+  categories,
+  status,
+  onStatusChange,
+  tagId,
+  onTagChange,
+  tags,
+  verifiedOnly,
+  onVerifiedOnlyChange,
+  hasActiveFilters,
+  onClear,
+}: {
+  search: string;
+  onSearchChange: (v: string) => void;
+  categoryId: string;
+  onCategoryChange: (v: string) => void;
+  categories: Category[];
+  status: StatusFilter;
+  onStatusChange: (v: StatusFilter) => void;
+  tagId: string;
+  onTagChange: (v: string) => void;
+  tags: Tag[];
+  verifiedOnly: boolean;
+  onVerifiedOnlyChange: (v: boolean) => void;
+  hasActiveFilters: boolean;
+  onClear: () => void;
+}) {
+  const selectedCategory = categories.find((c) => c.id === categoryId);
+  const selectedTag = tags.find((t) => t.id === tagId);
+
+  return (
+    <div className="flex flex-wrap items-end gap-3 border-b border-border px-6 py-4">
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="post-search" className="text-xs text-muted-foreground">
+          Title
+        </Label>
+        <div className="relative">
+          <SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            id="post-search"
+            value={search}
+            onChange={(e) => onSearchChange(e.target.value)}
+            placeholder="Search titles…"
+            className="w-56 pl-8"
+          />
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <Label className="text-xs text-muted-foreground">Status</Label>
+        <Select
+          value={status}
+          onValueChange={(v) => v && onStatusChange(v as StatusFilter)}
+        >
+          <SelectTrigger className="w-36">
+            <SelectValue>{STATUS_LABELS[status]}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="draft">Drafts</SelectItem>
+            <SelectItem value="published">Published</SelectItem>
+            <SelectItem value="deleted">Deleted</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <Label className="text-xs text-muted-foreground">Category</Label>
+        <Select
+          value={categoryId}
+          onValueChange={(v) => v && onCategoryChange(v)}
+        >
+          <SelectTrigger className="w-44">
+            <SelectValue>
+              {selectedCategory ? selectedCategory.label : "All categories"}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL}>All categories</SelectItem>
+            {categories.map((c) => (
+              <SelectItem key={c.id} value={c.id}>
+                {c.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <Label className="text-xs text-muted-foreground">Tag</Label>
+        <Select value={tagId} onValueChange={(v) => v && onTagChange(v)}>
+          <SelectTrigger className="w-40">
+            <SelectValue>
+              {selectedTag ? selectedTag.label : "All tags"}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL}>All tags</SelectItem>
+            {tags.map((t) => (
+              <SelectItem key={t.id} value={t.id}>
+                {t.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <Button
+        type="button"
+        variant={verifiedOnly ? "default" : "outline"}
+        size="sm"
+        aria-pressed={verifiedOnly}
+        onClick={() => onVerifiedOnlyChange(!verifiedOnly)}
+      >
+        <CheckCircle2Icon className="size-4" />
+        Verified only
+      </Button>
+
+      {hasActiveFilters && (
+        <Button type="button" variant="ghost" size="sm" onClick={onClear}>
+          <XIcon className="size-4" />
+          Clear
+        </Button>
+      )}
+    </div>
+  );
+}
+
+function SortableHead({
+  label,
+  sortKey,
+  activeKey,
+  dir,
+  onSort,
+}: {
+  label: string;
+  sortKey: SortKey;
+  activeKey: SortKey;
+  dir: SortDir;
+  onSort: (key: SortKey) => void;
+}) {
+  const isActive = activeKey === sortKey;
+  return (
+    <TableHead>
+      <button
+        type="button"
+        onClick={() => onSort(sortKey)}
+        className="flex items-center gap-1.5 -ml-1 px-1 py-0.5 rounded hover:text-foreground transition-colors"
+      >
+        {label}
+        {isActive ? (
+          dir === "asc" ? (
+            <ArrowUpIcon className="size-3.5" />
+          ) : (
+            <ArrowDownIcon className="size-3.5" />
+          )
+        ) : (
+          <ChevronsUpDownIcon className="size-3.5 text-muted-foreground/60" />
+        )}
+      </button>
+    </TableHead>
+  );
+}
+
+// ---------- Posts pagination ----------
+
+function PostsPagination({
+  page,
+  pageCount,
+  total,
+  pageSize,
+  onPageChange,
+}: {
+  page: number;
+  pageCount: number;
+  total: number;
+  pageSize: number;
+  onPageChange: (page: number) => void;
+}) {
+  const from = total === 0 ? 0 : page * pageSize + 1;
+  const to = Math.min(total, page * pageSize + pageSize);
+
+  return (
+    <div className="flex items-center justify-between gap-4 border-t border-border px-6 py-3">
+      <p className="text-sm text-muted-foreground tabular-nums">
+        {from}–{to} of {total}
+      </p>
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-muted-foreground tabular-nums">
+          Page {page + 1} of {pageCount}
+        </span>
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          className="size-8"
+          disabled={page === 0}
+          onClick={() => onPageChange(page - 1)}
+        >
+          <ChevronLeftIcon className="size-4" />
+          <span className="sr-only">Previous page</span>
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          className="size-8"
+          disabled={page >= pageCount - 1}
+          onClick={() => onPageChange(page + 1)}
+        >
+          <ChevronRightIcon className="size-4" />
+          <span className="sr-only">Next page</span>
+        </Button>
+      </div>
+    </div>
   );
 }
 

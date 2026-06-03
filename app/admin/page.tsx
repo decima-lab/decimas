@@ -36,10 +36,9 @@ export default async function AdminPage() {
 
   const [{ data: categories }, { data: tags }] = await Promise.all([
     supabase.from("category").select("id, label").order("label"),
-    supabase.from("tag").select("id, label").order("label"),
+    supabase.from("tag").select("id, label, category").order("label"),
   ]);
 
-  const authors: Record<string, string> = {};
   let usersWithRoles: { id: string; email: string; roles: string[] }[] = [];
   let editorCount = 0;
 
@@ -56,12 +55,7 @@ export default async function AdminPage() {
       rolesByUser.set(r.user_id, list);
     });
 
-    const allUsers = profilesData ?? [];
-    allUsers.forEach((u) => {
-      if (u.email) authors[u.id] = u.email;
-    });
-
-    usersWithRoles = allUsers
+    usersWithRoles = (profilesData ?? [])
       .map((u) => ({
         id: u.id,
         email: u.email ?? "(no email)",
@@ -73,8 +67,6 @@ export default async function AdminPage() {
     editorCount = usersWithRoles.filter((u) =>
       u.roles.includes("editor"),
     ).length;
-  } else if (user.email) {
-    authors[user.id] = user.email;
   }
 
   const activePosts = posts.filter((p) => !p.is_deleted);
@@ -97,7 +89,6 @@ export default async function AdminPage() {
       tags={tags ?? []}
       users={usersWithRoles}
       metrics={metrics}
-      authors={authors}
     />
   );
 }

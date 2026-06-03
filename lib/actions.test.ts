@@ -104,6 +104,36 @@ describe("createPost", () => {
       await expect(createPost({ label: "x" })).rejects.toThrow("db down");
     });
   });
+
+  describe("when a post is created with tags", () => {
+    it("inserts the post then maps the selected tags to it", async () => {
+      // # GIVEN
+      vi.mocked(requireEditorOrAdmin).mockResolvedValue({
+        // biome-ignore lint/suspicious/noExplicitAny: test fixture
+        user: { id: "user-1" } as any,
+        roles: ["editor"],
+      });
+      const single = vi
+        .fn()
+        .mockResolvedValue({ data: { id: "new-post" }, error: null });
+      const postInsert = vi
+        .fn()
+        .mockReturnValue({ select: () => ({ single }) });
+      const deleteEq = vi.fn().mockResolvedValue({ error: null });
+      const tagInsert = vi.fn().mockResolvedValue({ error: null });
+      supabaseFrom
+        .mockReturnValueOnce({ insert: postInsert })
+        .mockReturnValueOnce({ delete: () => ({ eq: deleteEq }) })
+        .mockReturnValueOnce({ insert: tagInsert });
+      // # WHEN
+      await createPost({ label: "Acme", tagIds: ["t1", "t2"] });
+      // # THEN
+      expect(tagInsert).toHaveBeenCalledWith([
+        { post_id: "new-post", tag_id: "t1" },
+        { post_id: "new-post", tag_id: "t2" },
+      ]);
+    });
+  });
 });
 
 describe("updatePost", () => {
@@ -228,6 +258,53 @@ describe("updatePost", () => {
       await expect(updatePost("post-1", { label: "x" })).rejects.toThrow(
         "Post not found",
       );
+    });
+  });
+
+  describe("when an admin updates a post's tags", () => {
+    it("replaces the tag mappings with the selected tags", async () => {
+      // # GIVEN
+      vi.mocked(requireEditorOrAdmin).mockResolvedValue({
+        // biome-ignore lint/suspicious/noExplicitAny: test fixture
+        user: { id: "admin-1" } as any,
+        roles: ["admin"],
+      });
+      const eqUpdate = vi.fn().mockResolvedValue({ error: null });
+      const deleteEq = vi.fn().mockResolvedValue({ error: null });
+      const tagInsert = vi.fn().mockResolvedValue({ error: null });
+      supabaseFrom
+        .mockReturnValueOnce({ update: () => ({ eq: eqUpdate }) })
+        .mockReturnValueOnce({ delete: () => ({ eq: deleteEq }) })
+        .mockReturnValueOnce({ insert: tagInsert });
+      // # WHEN
+      await updatePost("post-1", { label: "Renamed", tagIds: ["t1"] });
+      // # THEN
+      expect(deleteEq).toHaveBeenCalledWith("post_id", "post-1");
+      expect(tagInsert).toHaveBeenCalledWith([
+        { post_id: "post-1", tag_id: "t1" },
+      ]);
+    });
+  });
+
+  describe("when a post's tags are cleared", () => {
+    it("deletes the mappings without inserting new ones", async () => {
+      // # GIVEN
+      vi.mocked(requireEditorOrAdmin).mockResolvedValue({
+        // biome-ignore lint/suspicious/noExplicitAny: test fixture
+        user: { id: "admin-1" } as any,
+        roles: ["admin"],
+      });
+      const eqUpdate = vi.fn().mockResolvedValue({ error: null });
+      const deleteEq = vi.fn().mockResolvedValue({ error: null });
+      const tagInsert = vi.fn().mockResolvedValue({ error: null });
+      supabaseFrom
+        .mockReturnValueOnce({ update: () => ({ eq: eqUpdate }) })
+        .mockReturnValueOnce({ delete: () => ({ eq: deleteEq }) });
+      // # WHEN
+      await updatePost("post-1", { label: "Renamed", tagIds: [] });
+      // # THEN
+      expect(deleteEq).toHaveBeenCalledWith("post_id", "post-1");
+      expect(tagInsert).not.toHaveBeenCalled();
     });
   });
 });
