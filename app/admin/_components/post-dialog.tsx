@@ -52,6 +52,8 @@ export function PostDialog({
   const [pending, startTransition] = useTransition();
 
   const [label, setLabel] = useState("");
+  const [slug, setSlug] = useState("");
+  const [slugTouched, setSlugTouched] = useState(false);
   const [description, setDescription] = useState("");
   const [link, setLink] = useState("");
   const [categoryId, setCategoryId] = useState<string>(UNCATEGORISED);
@@ -63,6 +65,8 @@ export function PostDialog({
   useEffect(() => {
     if (open) {
       setLabel(post?.label ?? "");
+      setSlug(post?.slug ?? "");
+      setSlugTouched(post !== null);
       setDescription(post?.description ?? "");
       setLink(post?.link ?? "");
       setCategoryId(post?.category?.id ?? UNCATEGORISED);
@@ -71,6 +75,23 @@ export function PostDialog({
       setSelectedTagIds(post?.post_tag_mapping.map((m) => m.tag.id) ?? []);
     }
   }, [open, post]);
+
+  function toSlug(text: string) {
+    return text
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
+  }
+
+  function handleLabelChange(value: string) {
+    setLabel(value);
+    if (!slugTouched) setSlug(toSlug(value));
+  }
+
+  function handleSlugChange(value: string) {
+    setSlug(value);
+    setSlugTouched(true);
+  }
 
   // Group the predefined tags by their category for the picker.
   const tagGroups = useMemo(() => {
@@ -98,12 +119,21 @@ export function PostDialog({
       toast.error("Title is required");
       return;
     }
+    if (!slug.trim()) {
+      toast.error("Slug is required");
+      return;
+    }
+    if (categoryId === UNCATEGORISED) {
+      toast.error("Category is required");
+      return;
+    }
 
     const input: PostInput = {
+      slug: slug.trim(),
       label: label.trim(),
       description: description.trim() || null,
       link: link.trim() || null,
-      categoryId: categoryId === UNCATEGORISED ? null : categoryId,
+      categoryId: categoryId,
       isVerified,
       isGlobal,
       tagIds: selectedTagIds,
@@ -146,8 +176,24 @@ export function PostDialog({
             <Input
               id="label"
               value={label}
-              onChange={(e) => setLabel(e.target.value)}
+              onChange={(e) => handleLabelChange(e.target.value)}
               placeholder="e.g. Acme Side Hustle"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="slug">
+              Slug
+              <span className="ml-2 text-xs text-muted-foreground font-normal">
+                used in the URL: /posts/<em>{slug || "your-slug"}</em>
+              </span>
+            </Label>
+            <Input
+              id="slug"
+              value={slug}
+              onChange={(e) => handleSlugChange(e.target.value)}
+              placeholder="e.g. acme-side-hustle"
               required
             />
           </div>

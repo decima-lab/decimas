@@ -25,6 +25,7 @@ function makeSupabase(
 
 const samplePost: AdminPost = {
   id: "p1",
+  slug: "upwork",
   label: "Upwork",
   description: "Freelance marketplace",
   link: "https://upwork.com",
@@ -34,6 +35,8 @@ const samplePost: AdminPost = {
   is_deleted: false,
   status: "published",
   created_by: "user-1",
+  created_at: "2026-01-01T00:00:00Z",
+  updated_at: "2026-01-01T00:00:00Z",
   category: { id: "c1", label: "Freelancing" },
   post_tag_mapping: [
     { tag: { id: "t1", label: "Global", category: "Location" } },

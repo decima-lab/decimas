@@ -85,10 +85,11 @@ export async function resetPassword(
 // ---------- Posts ----------
 
 export type PostInput = {
+  slug: string;
   label: string;
   description?: string | null;
   link?: string | null;
-  categoryId?: string | null;
+  categoryId: string;
   isVerified?: boolean;
   isGlobal?: boolean;
   // When provided, replaces the post's tag set. Omit to leave tags untouched.
@@ -120,10 +121,11 @@ export async function createPost(input: PostInput) {
   const supabase = createClient(await cookies());
 
   const row = {
+    slug: input.slug,
     label: input.label,
     description: input.description ?? null,
     link: input.link ?? null,
-    category: input.categoryId ?? null,
+    category: input.categoryId,
     is_verified: input.isVerified ?? false,
     is_global: input.isGlobal ?? false,
     status: "draft" as const,
@@ -171,10 +173,11 @@ export async function updatePost(id: string, input: PostInput) {
   const { error } = await supabase
     .from("post")
     .update({
+      slug: input.slug,
       label: input.label,
       description: input.description ?? null,
       link: input.link ?? null,
-      category: input.categoryId ?? null,
+      category: input.categoryId,
       is_verified: input.isVerified ?? false,
       is_global: input.isGlobal ?? false,
     })

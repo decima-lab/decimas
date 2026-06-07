@@ -70,6 +70,7 @@ describe("createPost", () => {
       supabaseFrom.mockReturnValue({ insert });
       // # WHEN
       await createPost({
+        slug: "acme",
         label: "Acme",
         description: "Side hustle",
         link: "https://acme.test",
@@ -101,7 +102,9 @@ describe("createPost", () => {
         insert: vi.fn().mockResolvedValue({ error: { message: "db down" } }),
       });
       // # WHEN / # THEN
-      await expect(createPost({ label: "x" })).rejects.toThrow("db down");
+      await expect(
+        createPost({ slug: "x", label: "x", categoryId: "cat-1" }),
+      ).rejects.toThrow("db down");
     });
   });
 
@@ -126,7 +129,12 @@ describe("createPost", () => {
         .mockReturnValueOnce({ delete: () => ({ eq: deleteEq }) })
         .mockReturnValueOnce({ insert: tagInsert });
       // # WHEN
-      await createPost({ label: "Acme", tagIds: ["t1", "t2"] });
+      await createPost({
+        slug: "acme",
+        label: "Acme",
+        categoryId: "cat-1",
+        tagIds: ["t1", "t2"],
+      });
       // # THEN
       expect(tagInsert).toHaveBeenCalledWith([
         { post_id: "new-post", tag_id: "t1" },
@@ -149,7 +157,11 @@ describe("updatePost", () => {
       const update = vi.fn().mockReturnValue({ eq: eqUpdate });
       supabaseFrom.mockReturnValue({ update });
       // # WHEN
-      await updatePost("post-1", { label: "Renamed" });
+      await updatePost("post-1", {
+        slug: "renamed",
+        label: "Renamed",
+        categoryId: "cat-1",
+      });
       // # THEN
       expect(update).toHaveBeenCalled();
       expect(eqUpdate).toHaveBeenCalledWith("id", "post-1");
@@ -176,9 +188,9 @@ describe("updatePost", () => {
         }),
       });
       // # WHEN / # THEN
-      await expect(updatePost("post-1", { label: "x" })).rejects.toThrow(
-        /only edit their own posts/,
-      );
+      await expect(
+        updatePost("post-1", { slug: "x", label: "x", categoryId: "cat-1" }),
+      ).rejects.toThrow(/only edit their own posts/);
     });
   });
 
@@ -202,9 +214,9 @@ describe("updatePost", () => {
         }),
       });
       // # WHEN / # THEN
-      await expect(updatePost("post-1", { label: "x" })).rejects.toThrow(
-        /only edit drafts/,
-      );
+      await expect(
+        updatePost("post-1", { slug: "x", label: "x", categoryId: "cat-1" }),
+      ).rejects.toThrow(/only edit drafts/);
     });
   });
 
@@ -232,7 +244,11 @@ describe("updatePost", () => {
         update: () => ({ eq: eqUpdate }),
       });
       // # WHEN
-      await updatePost("post-1", { label: "Renamed" });
+      await updatePost("post-1", {
+        slug: "renamed",
+        label: "Renamed",
+        categoryId: "cat-1",
+      });
       // # THEN
       expect(eqUpdate).toHaveBeenCalledWith("id", "post-1");
     });
@@ -255,9 +271,9 @@ describe("updatePost", () => {
         }),
       });
       // # WHEN / # THEN
-      await expect(updatePost("post-1", { label: "x" })).rejects.toThrow(
-        "Post not found",
-      );
+      await expect(
+        updatePost("post-1", { slug: "x", label: "x", categoryId: "cat-1" }),
+      ).rejects.toThrow("Post not found");
     });
   });
 
@@ -277,7 +293,12 @@ describe("updatePost", () => {
         .mockReturnValueOnce({ delete: () => ({ eq: deleteEq }) })
         .mockReturnValueOnce({ insert: tagInsert });
       // # WHEN
-      await updatePost("post-1", { label: "Renamed", tagIds: ["t1"] });
+      await updatePost("post-1", {
+        slug: "renamed",
+        label: "Renamed",
+        categoryId: "cat-1",
+        tagIds: ["t1"],
+      });
       // # THEN
       expect(deleteEq).toHaveBeenCalledWith("post_id", "post-1");
       expect(tagInsert).toHaveBeenCalledWith([
@@ -301,7 +322,12 @@ describe("updatePost", () => {
         .mockReturnValueOnce({ update: () => ({ eq: eqUpdate }) })
         .mockReturnValueOnce({ delete: () => ({ eq: deleteEq }) });
       // # WHEN
-      await updatePost("post-1", { label: "Renamed", tagIds: [] });
+      await updatePost("post-1", {
+        slug: "renamed",
+        label: "Renamed",
+        categoryId: "cat-1",
+        tagIds: [],
+      });
       // # THEN
       expect(deleteEq).toHaveBeenCalledWith("post_id", "post-1");
       expect(tagInsert).not.toHaveBeenCalled();

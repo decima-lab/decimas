@@ -22,9 +22,10 @@ insert into tag (id, label, category) values
 on conflict do nothing;
 
 -- Posts
-insert into post (id, label, description, category, logo_url, link, is_verified, is_global) values
+insert into post (id, slug, label, description, category, logo_url, link, is_verified, is_global) values
   (
     'c1000000-0000-0000-0000-000000000001',
+    'upwork',
     'Upwork',
     'One of the largest freelance marketplaces connecting clients with professionals across hundreds of skill categories.',
     'a1000000-0000-0000-0000-000000000001',
@@ -34,6 +35,7 @@ insert into post (id, label, description, category, logo_url, link, is_verified,
   ),
   (
     'c1000000-0000-0000-0000-000000000002',
+    'fiverr',
     'Fiverr',
     'Freelance platform where you create "gigs" starting at $5. Great for designers, writers, and digital marketers.',
     'a1000000-0000-0000-0000-000000000001',
@@ -43,6 +45,7 @@ insert into post (id, label, description, category, logo_url, link, is_verified,
   ),
   (
     'c1000000-0000-0000-0000-000000000003',
+    'swagbucks',
     'Swagbucks',
     'Earn points (SB) by taking surveys, watching videos, and shopping online. Redeem for PayPal cash or gift cards.',
     'a1000000-0000-0000-0000-000000000002',
@@ -52,6 +55,7 @@ insert into post (id, label, description, category, logo_url, link, is_verified,
   ),
   (
     'c1000000-0000-0000-0000-000000000004',
+    'survey-junkie',
     'Survey Junkie',
     'Survey platform that pays cash via PayPal for sharing your opinions. One of the highest-rated survey sites.',
     'a1000000-0000-0000-0000-000000000002',
@@ -61,6 +65,7 @@ insert into post (id, label, description, category, logo_url, link, is_verified,
   ),
   (
     'c1000000-0000-0000-0000-000000000005',
+    'youtube',
     'YouTube',
     'Monetize video content through ads, memberships, and Super Chats once you reach partner eligibility.',
     'a1000000-0000-0000-0000-000000000003',
@@ -70,6 +75,7 @@ insert into post (id, label, description, category, logo_url, link, is_verified,
   ),
   (
     'c1000000-0000-0000-0000-000000000006',
+    'substack',
     'Substack',
     'Publish a newsletter and charge subscribers a monthly or annual fee. Keep 90% of subscription revenue.',
     'a1000000-0000-0000-0000-000000000003',
@@ -79,6 +85,7 @@ insert into post (id, label, description, category, logo_url, link, is_verified,
   ),
   (
     'c1000000-0000-0000-0000-000000000007',
+    'honeygain',
     'Honeygain',
     'Earn passive income by sharing your unused internet bandwidth. No active work required after setup.',
     'a1000000-0000-0000-0000-000000000004',
@@ -88,6 +95,7 @@ insert into post (id, label, description, category, logo_url, link, is_verified,
   ),
   (
     'c1000000-0000-0000-0000-000000000008',
+    'amazon-mechanical-turk',
     'Amazon Mechanical Turk',
     'Complete small human intelligence tasks (HITs) for pay. Good for supplemental income with flexible hours.',
     'a1000000-0000-0000-0000-000000000005',
@@ -97,6 +105,7 @@ insert into post (id, label, description, category, logo_url, link, is_verified,
   ),
   (
     'c1000000-0000-0000-0000-000000000009',
+    'appen',
     'Appen',
     'Data annotation and AI training tasks such as search evaluation, transcription, and image tagging.',
     'a1000000-0000-0000-0000-000000000005',
@@ -106,6 +115,7 @@ insert into post (id, label, description, category, logo_url, link, is_verified,
   ),
   (
     'c1000000-0000-0000-0000-000000000010',
+    'teachable',
     'Teachable',
     'Create and sell online courses. Keep up to 97% of revenue. Suits educators, coaches, and subject-matter experts.',
     'a1000000-0000-0000-0000-000000000003',

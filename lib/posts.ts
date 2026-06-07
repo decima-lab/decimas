@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type AdminPost = {
   id: string;
+  slug: string;
   label: string;
   description: string | null;
   link: string | null;
@@ -11,6 +12,8 @@ export type AdminPost = {
   is_deleted: boolean;
   status: "draft" | "published";
   created_by: string | null;
+  created_at: string;
+  updated_at: string;
   category: { id: string; label: string } | null;
   post_tag_mapping: {
     tag: { id: string; label: string; category: string | null };
@@ -23,7 +26,7 @@ export async function getAllPosts(
   const { data, error } = await supabase
     .from("post")
     .select(
-      "id, label, description, link, logo_url, is_verified, is_global, is_deleted, status, created_by, category(id, label), post_tag_mapping(tag(id, label, category))",
+      "id, slug, label, description, link, logo_url, is_verified, is_global, is_deleted, status, created_by, created_at, updated_at, category(id, label), post_tag_mapping(tag(id, label, category))",
     )
     .order("status", { ascending: true })
     .order("label");
