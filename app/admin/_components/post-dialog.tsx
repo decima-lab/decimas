@@ -56,6 +56,7 @@ export function PostDialog({
   const [slugTouched, setSlugTouched] = useState(false);
   const [description, setDescription] = useState("");
   const [link, setLink] = useState("");
+  const [logoUrl, setLogoUrl] = useState("");
   const [categoryId, setCategoryId] = useState<string>(UNCATEGORISED);
   const [isVerified, setIsVerified] = useState(false);
   const [isGlobal, setIsGlobal] = useState(false);
@@ -69,6 +70,7 @@ export function PostDialog({
       setSlugTouched(post !== null);
       setDescription(post?.description ?? "");
       setLink(post?.link ?? "");
+      setLogoUrl(post?.logo_url ?? "");
       setCategoryId(post?.category?.id ?? UNCATEGORISED);
       setIsVerified(post?.is_verified ?? false);
       setIsGlobal(post?.is_global ?? false);
@@ -133,6 +135,7 @@ export function PostDialog({
       label: label.trim(),
       description: description.trim() || null,
       link: link.trim() || null,
+      logoUrl: logoUrl.trim() || null,
       categoryId: categoryId,
       isVerified,
       isGlobal,
@@ -160,7 +163,7 @@ export function PostDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[560px]">
+      <DialogContent className="sm:max-w-[680px] max-h-[calc(100dvh-2rem)] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEditing ? "Edit post" : "New post"}</DialogTitle>
           <DialogDescription>
@@ -206,6 +209,7 @@ export function PostDialog({
               onChange={(e) => setDescription(e.target.value)}
               placeholder="What is this site about?"
               rows={3}
+              className="max-h-[30vh] overflow-y-auto"
             />
           </div>
 
@@ -218,6 +222,29 @@ export function PostDialog({
               placeholder="https://example.com"
               type="url"
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="logoUrl">Logo URL</Label>
+            <div className="flex items-center gap-3">
+              {logoUrl.trim() ? (
+                // biome-ignore lint/performance/noImgElement: admin preview of an arbitrary external URL
+                <img
+                  src={logoUrl.trim()}
+                  alt=""
+                  className="size-9 shrink-0 rounded border border-input object-contain"
+                />
+              ) : (
+                <div className="size-9 shrink-0 rounded border border-dashed border-input" />
+              )}
+              <Input
+                id="logoUrl"
+                value={logoUrl}
+                onChange={(e) => setLogoUrl(e.target.value)}
+                placeholder="https://example.com/favicon.ico"
+                type="url"
+              />
+            </div>
           </div>
 
           <div className="space-y-2">
