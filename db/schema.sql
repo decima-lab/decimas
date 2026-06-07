@@ -45,21 +45,28 @@ create table tag (
 -- is_deleted: soft delete flag — rows are never hard deleted.
 -- -----------------------------------------------------------------------------
 create table post (
-  id          uuid primary key default gen_random_uuid(),
-  label       text not null,
+  id          uuid        primary key default gen_random_uuid(),
+  slug        text        not null unique,
+  label       text        not null,
   description text,
-  category    uuid references category(id),
+  category    uuid        not null references category(id),
   logo_url    text,
   link        text,
-  is_verified bool not null default false,
-  is_global   bool not null default false,
-  is_deleted  bool not null default false,
-  status      text not null default 'draft' check (status in ('draft', 'published')),
-  created_by  uuid references auth.users(id),
-  metadata    jsonb
+  is_verified bool        not null default false,
+  is_global   bool        not null default false,
+  is_deleted  bool        not null default false,
+  status      text        not null default 'draft' check (status in ('draft', 'published')),
+  created_by  uuid        references auth.users(id),
+  metadata    jsonb,
+  created_at     timestamptz not null default now(),
+  updated_at     timestamptz not null default now(),
+  search_vector  tsvector    generated always as (
+    to_tsvector('english', coalesce(label, '') || ' ' || coalesce(description, ''))
+  ) stored
 );
 
 create index post_category_idx on post (category);
+create index post_search_idx on post using gin(search_vector);
 
 -- -----------------------------------------------------------------------------
 -- post_tag_mapping
@@ -135,6 +142,18 @@ create view post_with_votes with (security_invoker = true) as
 -- FUNCTIONS
 -- =============================================================================
 
+-- private.set_updated_at()
+-- Generic trigger function that stamps updated_at = now() on any row update.
+create or replace function private.set_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
 -- private.is_admin()
 -- Returns true if the current user has the 'admin' role.
 -- security definer + empty search_path: runs as owner to avoid infinite
@@ -172,7 +191,7 @@ $$;
 -- Fires on insert or email update. security definer so it can write to
 -- public.profiles from within the auth schema trigger context.
 -- Execute is revoked from all roles — only the trigger should call this.
-create or replace function handle_auth_user_change()
+create or replace function private.handle_auth_user_change()
 returns trigger
 language plpgsql
 security definer
@@ -188,18 +207,21 @@ begin
 end;
 $$;
 
-revoke execute on function handle_auth_user_change() from anon, authenticated, public;
-
 
 -- =============================================================================
 -- TRIGGERS
 -- =============================================================================
 
+-- Keep post.updated_at current on every update.
+create trigger post_set_updated_at
+  before update on post
+  for each row execute function private.set_updated_at();
+
 -- Sync profiles whenever a user signs up or changes their email.
 drop trigger if exists on_auth_user_changed on auth.users;
 create trigger on_auth_user_changed
   after insert or update of email on auth.users
-  for each row execute function handle_auth_user_change();
+  for each row execute function private.handle_auth_user_change();
 
 -- Backfill profiles for any users that existed before this trigger was added.
 insert into profiles (id, email)
