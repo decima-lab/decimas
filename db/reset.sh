@@ -9,8 +9,8 @@ drop table if exists user_roles cascade;
 drop table if exists post cascade;
 drop table if exists tag cascade;
 drop table if exists category cascade;
+drop table if exists profiles cascade;
 drop view if exists post_with_votes;
-drop function if exists private.is_admin();
 drop schema if exists private cascade;
 "
 
