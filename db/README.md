@@ -47,18 +47,90 @@ Each migration is a discrete SQL file representing one change. Supabase tracks w
 
 **Adding a new table or column in the future**
 
-```bash
-npx supabase migration new add_users_table
-# write only the new CREATE/ALTER statements in the generated file
-npx supabase db push
-```
-
 Rules to follow:
 - Each migration file should only contain the **delta** — what's changing, not the full schema
 - Never edit an already-pushed migration file — create a new one instead
 - Migration files are ordered by timestamp and always run in sequence
 
 `db/schema.sql` in this repo serves as a human-readable reference of the full schema, but the source of truth for Supabase is the `supabase/migrations/` folder.
+
+## Making schema changes after production is live
+
+Once the app is deployed and prod has real data, you can never wipe and rebuild — you must apply changes incrementally using migration files. Follow this workflow for every schema change:
+
+### The two files you always update together
+
+| File | Purpose |
+|---|---|
+| `db/schema.sql` | Complete picture of what the DB looks like. Used for dev resets and as a human-readable reference. |
+| `supabase/migrations/<timestamp>_<name>.sql` | The delta — only what changed. Applied to prod without touching existing data. |
+
+### Step-by-step workflow
+
+**1. Update `schema.sql` locally**
+
+Make your change directly in `schema.sql` as if you were designing the table from scratch. For example, add a `published_at` column to the `post` table definition.
+
+**2. Write the migration file by hand**
+
+Create a new file in `supabase/migrations/` named `<timestamp>_<description>.sql`. The timestamp must be in `YYYYMMDDHHmmss` format and newer than the last migration:
+
+```bash
+# Example filename
+supabase/migrations/20260608000000_add_post_published_at.sql
+```
+
+Write only the delta — the SQL to bring the live DB from its current state to the new state:
+
+```sql
+alter table post add column published_at timestamptz;
+```
+
+Since you already know what changed in `schema.sql`, writing the corresponding `ALTER TABLE` is straightforward.
+
+**3. Review the migration file**
+
+Double-check the file before applying it anywhere. Common mistakes: forgetting `if not exists`, wrong column type, missing `not null` default.
+
+**4. Apply to dev first**
+
+Test the migration against your dev Supabase project:
+
+```bash
+npx supabase db push --linked
+```
+
+Verify your app still works against dev.
+
+**5. Apply to prod**
+
+Point at the prod DB and push:
+
+```bash
+npx supabase db push --db-url "postgres://postgres:[password]@db.[prod-ref].supabase.co:5432/postgres"
+```
+
+Supabase tracks which migrations have already been applied, so only new files run.
+
+### Rules to follow
+
+- **Never edit a migration file after it has been applied to prod** — create a new one instead
+- **Never run `schema.sql` directly against prod** after the initial setup — it will fail or corrupt data
+- **Migration files are ordered by timestamp** and always run in sequence
+- **`schema.sql` and the migrations must stay in sync** — `schema.sql` should always reflect what you'd get if you ran all migrations from scratch on an empty DB
+
+### Example: adding a column
+
+```
+# 1. Edit schema.sql — add `published_at timestamptz` to the post table definition
+
+# 2. Create the migration file
+#    supabase/migrations/20260608000000_add_post_published_at.sql
+#    Contents: alter table post add column published_at timestamptz;
+
+# 3. Push to dev, test, then push to prod
+npx supabase db push --linked
+```
 
 ## Seeding sample data
 
