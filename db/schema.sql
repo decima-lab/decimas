@@ -45,7 +45,7 @@ create table post_vote (
   primary key (post_id, user_id)
 );
 
-create view post_with_votes as
+create view post_with_votes with (security_invoker = true) as
   select
     p.*,
     coalesce(sum(case when v.vote = 1 then 1 else 0 end), 0)  as upvotes,
