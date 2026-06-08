@@ -90,6 +90,36 @@ describe("createPost", () => {
     });
   });
 
+  describe("when a post includes an effort level and earnings", () => {
+    it("persists the effort level, earn-up-to amount and currency", async () => {
+      // # GIVEN
+      vi.mocked(requireEditorOrAdmin).mockResolvedValue({
+        // biome-ignore lint/suspicious/noExplicitAny: test fixture
+        user: { id: "user-1" } as any,
+        roles: ["editor"],
+      });
+      const insert = vi.fn().mockResolvedValue({ error: null });
+      supabaseFrom.mockReturnValue({ insert });
+      // # WHEN
+      await createPost({
+        slug: "acme",
+        label: "Acme",
+        categoryId: "cat-1",
+        effortLevel: 3,
+        earnUpToAmount: 500,
+        earnUpToCurrency: "SGD",
+      });
+      // # THEN
+      expect(insert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          effort_level: 3,
+          earn_up_to_amount: 500,
+          earn_up_to_currency: "SGD",
+        }),
+      );
+    });
+  });
+
   describe("when Supabase returns an error on insert", () => {
     it("throws the error message", async () => {
       // # GIVEN

@@ -93,6 +93,9 @@ export type PostInput = {
   categoryId: string;
   isVerified?: boolean;
   isGlobal?: boolean;
+  effortLevel?: number;
+  earnUpToAmount?: number;
+  earnUpToCurrency?: string;
   // When provided, replaces the post's tag set. Omit to leave tags untouched.
   tagIds?: string[];
 };
@@ -130,6 +133,9 @@ export async function createPost(input: PostInput) {
     category: input.categoryId,
     is_verified: input.isVerified ?? false,
     is_global: input.isGlobal ?? false,
+    effort_level: input.effortLevel ?? 3,
+    earn_up_to_amount: input.earnUpToAmount ?? 0,
+    earn_up_to_currency: input.earnUpToCurrency ?? "USD",
     status: "draft" as const,
     created_by: user.id,
   };
@@ -183,6 +189,9 @@ export async function updatePost(id: string, input: PostInput) {
       category: input.categoryId,
       is_verified: input.isVerified ?? false,
       is_global: input.isGlobal ?? false,
+      effort_level: input.effortLevel ?? 3,
+      earn_up_to_amount: input.earnUpToAmount ?? 0,
+      earn_up_to_currency: input.earnUpToCurrency ?? "USD",
     })
     .eq("id", id);
   if (error) throw new Error(error.message);

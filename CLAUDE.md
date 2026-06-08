@@ -70,8 +70,3 @@ A list of compiled websites where users can get money online.
     });
   });
   ```
-
-## Next Steps
-1. Wire the landing page card grid to real posts — `PostCard` is now prop-driven (`label`, `description`, `link`, `logoUrl`, `isVerified`, `isGlobal`, `createdAt`), but `app/page.tsx` still feeds it 10 placeholder objects via `Array.from`
-2. Make `PostsSearch` functional (currently `console.log`s) and migrate it onto the `Input`/`Select` primitives (needs a `Checkbox` primitive)
-3. Build category/tag CRUD in the admin (post CRUD is done; no `createCategory` / `createTag` actions yet)
