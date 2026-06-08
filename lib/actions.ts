@@ -89,6 +89,7 @@ export type PostInput = {
   label: string;
   description?: string | null;
   link?: string | null;
+  logoUrl?: string | null;
   categoryId: string;
   isVerified?: boolean;
   isGlobal?: boolean;
@@ -125,6 +126,7 @@ export async function createPost(input: PostInput) {
     label: input.label,
     description: input.description ?? null,
     link: input.link ?? null,
+    logo_url: input.logoUrl ?? null,
     category: input.categoryId,
     is_verified: input.isVerified ?? false,
     is_global: input.isGlobal ?? false,
@@ -177,6 +179,7 @@ export async function updatePost(id: string, input: PostInput) {
       label: input.label,
       description: input.description ?? null,
       link: input.link ?? null,
+      logo_url: input.logoUrl ?? null,
       category: input.categoryId,
       is_verified: input.isVerified ?? false,
       is_global: input.isGlobal ?? false,
