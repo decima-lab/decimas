@@ -19,14 +19,23 @@ export default function Home() {
             </span>
           </div>
           <PostsSearch />
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4">
             {Array.from({ length: 10 }, (_, i) => `card-${i}`).map((id) => (
               <PostCard
                 key={id}
                 label="Earning Platform"
+                category="Surveys & Rewards"
                 description="Start earning money online with this verified platform. Complete tasks, surveys, and other activities to grow your income."
                 link="https://example.com"
                 logoUrl="https://picsum.photos/64/64?random"
+                tags={[
+                  "Beginner Friendly",
+                  "PayPal",
+                  "Free to Join",
+                  "Weekly",
+                  "Mobile App",
+                  "Side Income",
+                ]}
                 isVerified
                 isGlobal
                 createdAt="2023-01-01"
