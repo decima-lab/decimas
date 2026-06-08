@@ -14,7 +14,7 @@ A list of compiled websites where users can get money online.
 ## Project Structure
 - `app/` — Next.js pages
   - `app/page.tsx` — landing page (Banner + Search + Card grid)
-  - `app/login/page.tsx` — login form (still raw HTML, unstyled)
+  - `app/login/page.tsx` — login form (styled via `AuthShell` split-screen layout)
   - `app/admin/page.tsx` — server component, auth + role gate
   - `app/admin/_components/admin-client.tsx` — admin dashboard UI
   - `app/admin/_components/post-dialog.tsx` — post create/edit dialog
@@ -34,7 +34,7 @@ A list of compiled websites where users can get money online.
 
 ## What's Built
 - Landing page (`/`) — styled with custom Tailwind components, placeholder card grid
-- Login page (`/login`) — functional via `useActionState` + `signIn` server action, **but still unstyled**
+- Login page (`/login`) — functional via `useActionState` + `signIn` server action; styled with the `AuthShell` split-screen layout, `PasswordInput` (show/hide), and a forgot-password dialog
 - Header — client component, auth-aware (shows Sign In or Admin link)
 - Admin page (`/admin`) — protected, gated by `admin` or `editor` role
   - Loads posts/categories/tags
@@ -72,6 +72,6 @@ A list of compiled websites where users can get money online.
   ```
 
 ## Next Steps
-1. Style the login page (still raw HTML)
-2. Wire the landing page card grid to real posts (currently renders 10 placeholder `PostCard`s via `Array.from`)
+1. Wire the landing page card grid to real posts — `PostCard` is now prop-driven (`label`, `description`, `link`, `logoUrl`, `isVerified`, `isGlobal`, `createdAt`), but `app/page.tsx` still feeds it 10 placeholder objects via `Array.from`
+2. Make `PostsSearch` functional (currently `console.log`s) and migrate it onto the `Input`/`Select` primitives (needs a `Checkbox` primitive)
 3. Build category/tag CRUD in the admin (post CRUD is done; no `createCategory` / `createTag` actions yet)

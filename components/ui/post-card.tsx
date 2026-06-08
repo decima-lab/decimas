@@ -1,40 +1,93 @@
-import { CheckCircle2, Globe } from "lucide-react";
-import Image from "next/image";
+import { ArrowUpRight, CheckCircle2, Globe } from "lucide-react";
+import { Badge } from "./badge";
+import { buttonVariants } from "./button";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "./card";
 
-export function PostCard() {
+export type PostCardProps = {
+  label: string;
+  description: string | null;
+  link: string | null;
+  logoUrl: string | null;
+  isVerified: boolean;
+  isGlobal: boolean;
+  createdAt: string;
+};
+
+const dateFormatter = new Intl.DateTimeFormat("en-US", {
+  year: "numeric",
+  month: "short",
+  day: "numeric",
+});
+
+export function PostCard({
+  label,
+  description,
+  link,
+  logoUrl,
+  isVerified,
+  isGlobal,
+  createdAt,
+}: PostCardProps) {
   return (
-    <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-md hover:shadow-lg transition-shadow p-6 border border-gray-200 dark:border-zinc-700">
-      <div className="flex items-start justify-between mb-4">
-        <div className="shrink-0">
-          <Image
-            src="https://picsum.photos/64/64?random"
-            className="size-14 object-cover rounded-lg"
-            alt="Platform"
-            width={64}
-            height={64}
-          />
+    <Card>
+      <CardHeader>
+        <div className="flex items-start justify-between gap-2">
+          <div className="size-14 shrink-0 overflow-hidden rounded-lg ring-1 ring-foreground/10">
+            {logoUrl ? (
+              // biome-ignore lint/performance/noImgElement: arbitrary external logo URL
+              <img
+                src={logoUrl}
+                alt=""
+                width={56}
+                height={56}
+                className="size-full object-cover"
+              />
+            ) : (
+              <div className="flex size-full items-center justify-center bg-muted text-muted-foreground">
+                <Globe className="size-6" />
+              </div>
+            )}
+          </div>
+          {(isVerified || isGlobal) && (
+            <div className="flex flex-wrap justify-end gap-1.5">
+              {isVerified && (
+                <Badge variant="secondary">
+                  <CheckCircle2 /> Verified
+                </Badge>
+              )}
+              {isGlobal && (
+                <Badge variant="outline">
+                  <Globe /> Global
+                </Badge>
+              )}
+            </div>
+          )}
         </div>
-        <div className="flex gap-2">
-          <CheckCircle2 className="size-5 text-green-500" />
-          <Globe className="size-5 text-blue-500" />
-        </div>
-      </div>
-      <h3 className="font-semibold text-lg mb-2">Earning Platform</h3>
-      <p className="text-gray-600 dark:text-gray-300 text-sm mb-4">
-        Start earning money online with this verified platform. Complete tasks,
-        surveys, and other activities to grow your income.
-      </p>
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-gray-500 dark:text-gray-400">
-          Added on January 1, 2023
+        <CardTitle className="text-lg">{label}</CardTitle>
+      </CardHeader>
+      {description && (
+        <CardContent>
+          <p className="line-clamp-3 text-sm text-muted-foreground">
+            {description}
+          </p>
+        </CardContent>
+      )}
+      <CardFooter className="justify-between">
+        <span className="text-xs text-muted-foreground">
+          Added {dateFormatter.format(new Date(createdAt))}
         </span>
-        <button
-          type="button"
-          className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
-        >
-          Learn More →
-        </button>
-      </div>
-    </div>
+        {link && (
+          <a
+            href={link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={buttonVariants({ variant: "outline", size: "sm" })}
+          >
+            Learn More
+            <ArrowUpRight />
+          </a>
+        )}
+      </CardFooter>
+    </Card>
   );
 }

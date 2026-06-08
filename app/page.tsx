@@ -11,17 +11,26 @@ export default function Home() {
       <SiteHeader />
       <Banner />
       <Container>
-        <div className="py-8 space-y-6">
+        <div className="space-y-6">
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-bold">Explore Opportunities</h2>
-            <span className="text-sm text-gray-600 dark:text-gray-400">
+            <span className="text-sm text-muted-foreground">
               Showing 10 platforms
             </span>
           </div>
           <PostsSearch />
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 10 }, (_, i) => `card-${i}`).map((id) => (
-              <PostCard key={id} />
+              <PostCard
+                key={id}
+                label="Earning Platform"
+                description="Start earning money online with this verified platform. Complete tasks, surveys, and other activities to grow your income."
+                link="https://example.com"
+                logoUrl="https://picsum.photos/64/64?random"
+                isVerified
+                isGlobal
+                createdAt="2023-01-01"
+              />
             ))}
           </div>
         </div>

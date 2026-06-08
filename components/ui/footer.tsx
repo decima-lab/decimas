@@ -1,107 +1,29 @@
+import { Mail } from "lucide-react";
 import Link from "next/link";
+import { buttonVariants } from "./button";
 import { Logo } from "./logo";
 
 export function Footer() {
   return (
-    <footer className="bg-gray-50 dark:bg-zinc-900 border-t border-gray-200 dark:border-zinc-800">
+    <footer className="bg-muted border-t border-border">
       <div className="max-w-6xl mx-auto px-4 py-12">
-        <div className="grid md:grid-cols-4 gap-8 mb-8">
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <Logo />
-            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-              Discover the best online earning platforms
+            <p className="mt-2 text-sm text-muted-foreground">
+              Discover the best online earning opportunities
             </p>
           </div>
-          <div>
-            <h4 className="font-semibold mb-4">Explore</h4>
-            <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-              <li>
-                <Link
-                  href="#"
-                  className="hover:text-blue-600 dark:hover:text-blue-400"
-                >
-                  All Platforms
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="#"
-                  className="hover:text-blue-600 dark:hover:text-blue-400"
-                >
-                  Categories
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="#"
-                  className="hover:text-blue-600 dark:hover:text-blue-400"
-                >
-                  Verified Only
-                </Link>
-              </li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-semibold mb-4">Company</h4>
-            <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-              <li>
-                <Link
-                  href="#"
-                  className="hover:text-blue-600 dark:hover:text-blue-400"
-                >
-                  About
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="#"
-                  className="hover:text-blue-600 dark:hover:text-blue-400"
-                >
-                  Contact
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="#"
-                  className="hover:text-blue-600 dark:hover:text-blue-400"
-                >
-                  Blog
-                </Link>
-              </li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-semibold mb-4">Legal</h4>
-            <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-              <li>
-                <Link
-                  href="#"
-                  className="hover:text-blue-600 dark:hover:text-blue-400"
-                >
-                  Privacy
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="#"
-                  className="hover:text-blue-600 dark:hover:text-blue-400"
-                >
-                  Terms
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="#"
-                  className="hover:text-blue-600 dark:hover:text-blue-400"
-                >
-                  Disclaimer
-                </Link>
-              </li>
-            </ul>
-          </div>
+          <Link
+            href="/contact-us"
+            className={buttonVariants({ variant: "outline", size: "lg" })}
+          >
+            <Mail />
+            Contact Us
+          </Link>
         </div>
-        <div className="border-t border-gray-200 dark:border-zinc-800 pt-8">
-          <p className="text-center text-sm text-gray-600 dark:text-gray-400">
+        <div className="border-t border-border mt-8 pt-8">
+          <p className="text-center text-sm text-muted-foreground">
             &copy; {new Date().getFullYear()} Decimas. All rights reserved.
           </p>
         </div>
