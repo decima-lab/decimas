@@ -22,7 +22,7 @@ insert into tag (id, label, category) values
 on conflict do nothing;
 
 -- Posts
-insert into post (id, slug, label, description, category, logo_url, link, is_verified, is_global) values
+insert into post (id, slug, label, description, category, logo_url, link, is_verified, is_global, effort_level, earn_up_to_amount, earn_up_to_currency) values
   (
     'c1000000-0000-0000-0000-000000000001',
     'upwork',
@@ -31,7 +31,7 @@ insert into post (id, slug, label, description, category, logo_url, link, is_ver
     'a1000000-0000-0000-0000-000000000001',
     'https://www.upwork.com/favicon.ico',
     'https://www.upwork.com',
-    true, true
+    true, true, 4, 5000, 'USD'
   ),
   (
     'c1000000-0000-0000-0000-000000000002',
@@ -41,7 +41,7 @@ insert into post (id, slug, label, description, category, logo_url, link, is_ver
     'a1000000-0000-0000-0000-000000000001',
     'https://www.fiverr.com/favicon.ico',
     'https://www.fiverr.com',
-    true, true
+    true, true, 3, 3000, 'USD'
   ),
   (
     'c1000000-0000-0000-0000-000000000003',
@@ -51,7 +51,7 @@ insert into post (id, slug, label, description, category, logo_url, link, is_ver
     'a1000000-0000-0000-0000-000000000002',
     'https://www.swagbucks.com/favicon.ico',
     'https://www.swagbucks.com',
-    true, false
+    true, false, 1, 200, 'USD'
   ),
   (
     'c1000000-0000-0000-0000-000000000004',
@@ -61,7 +61,7 @@ insert into post (id, slug, label, description, category, logo_url, link, is_ver
     'a1000000-0000-0000-0000-000000000002',
     'https://www.surveyjunkie.com/favicon.ico',
     'https://www.surveyjunkie.com',
-    true, false
+    true, false, 1, 150, 'GBP'
   ),
   (
     'c1000000-0000-0000-0000-000000000005',
@@ -71,7 +71,7 @@ insert into post (id, slug, label, description, category, logo_url, link, is_ver
     'a1000000-0000-0000-0000-000000000003',
     'https://www.youtube.com/favicon.ico',
     'https://www.youtube.com',
-    true, true
+    true, true, 5, 10000, 'USD'
   ),
   (
     'c1000000-0000-0000-0000-000000000006',
@@ -81,7 +81,7 @@ insert into post (id, slug, label, description, category, logo_url, link, is_ver
     'a1000000-0000-0000-0000-000000000003',
     'https://substack.com/favicon.ico',
     'https://substack.com',
-    true, true
+    true, true, 4, 4000, 'USD'
   ),
   (
     'c1000000-0000-0000-0000-000000000007',
@@ -91,7 +91,7 @@ insert into post (id, slug, label, description, category, logo_url, link, is_ver
     'a1000000-0000-0000-0000-000000000004',
     'https://www.honeygain.com/favicon.ico',
     'https://www.honeygain.com',
-    true, true
+    true, true, 1, 50, 'USD'
   ),
   (
     'c1000000-0000-0000-0000-000000000008',
@@ -101,7 +101,7 @@ insert into post (id, slug, label, description, category, logo_url, link, is_ver
     'a1000000-0000-0000-0000-000000000005',
     'https://www.mturk.com/favicon.ico',
     'https://www.mturk.com',
-    true, false
+    true, false, 2, 300, 'USD'
   ),
   (
     'c1000000-0000-0000-0000-000000000009',
@@ -111,7 +111,7 @@ insert into post (id, slug, label, description, category, logo_url, link, is_ver
     'a1000000-0000-0000-0000-000000000005',
     'https://appen.com/favicon.ico',
     'https://appen.com',
-    true, true
+    true, true, 2, 800, 'SGD'
   ),
   (
     'c1000000-0000-0000-0000-000000000010',
@@ -121,7 +121,7 @@ insert into post (id, slug, label, description, category, logo_url, link, is_ver
     'a1000000-0000-0000-0000-000000000003',
     'https://teachable.com/favicon.ico',
     'https://teachable.com',
-    true, true
+    true, true, 4, 6000, 'USD'
   )
 on conflict do nothing;
 
