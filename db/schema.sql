@@ -45,22 +45,28 @@ create table tag (
 -- is_deleted: soft delete flag — rows are never hard deleted.
 -- -----------------------------------------------------------------------------
 create table post (
-  id          uuid        primary key default gen_random_uuid(),
-  slug        text        not null unique,
-  label       text        not null,
-  description text,
-  category    uuid        not null references category(id),
-  logo_url    text,
-  link        text,
-  is_verified bool        not null default false,
-  is_global   bool        not null default false,
-  is_deleted  bool        not null default false,
-  status      text        not null default 'draft' check (status in ('draft', 'published')),
-  created_by  uuid        references auth.users(id),
-  metadata    jsonb,
-  created_at     timestamptz not null default now(),
-  updated_at     timestamptz not null default now(),
-  search_vector  tsvector    generated always as (
+  id                  uuid        primary key default gen_random_uuid(),
+  slug                text        not null unique,
+  label               text        not null,
+  description         text,
+  category            uuid        not null references category(id),
+  logo_url            text,
+  link                text,
+  is_verified         bool        not null default false,
+  is_global           bool        not null default false,
+  is_deleted          bool        not null default false,
+  effort_level        smallint    not null default 3
+                                  check (effort_level between 1 and 5),
+  earn_up_to_amount   integer     not null default 0
+                                  check (earn_up_to_amount >= 0),
+  earn_up_to_currency text        not null default 'USD'
+                                  check (char_length(earn_up_to_currency) = 3),
+  status              text        not null default 'draft' check (status in ('draft', 'published')),
+  created_by          uuid        references auth.users(id),
+  metadata            jsonb,
+  created_at          timestamptz not null default now(),
+  updated_at          timestamptz not null default now(),
+  search_vector       tsvector    generated always as (
     to_tsvector('english', coalesce(label, '') || ' ' || coalesce(description, ''))
   ) stored
 );
