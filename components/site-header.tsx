@@ -3,20 +3,20 @@ import { Logo } from "@/components/ui/logo";
 
 export function SiteHeader() {
   return (
-    <header className="w-full flex items-center justify-between p-4 bg-white dark:bg-black border-b border-gray-200 dark:border-zinc-800">
+    <header className="w-full flex items-center justify-between p-4 bg-background border-b border-border">
       <Logo variant={"link"} />
       <nav className="flex items-center gap-6">
         <Link
-          href="#"
-          className="text-sm font-medium hover:text-blue-600 dark:hover:text-blue-400"
+          href="/blog"
+          className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
         >
-          Browse
+          Blog
         </Link>
         <Link
-          href="#"
-          className="text-sm font-medium hover:text-blue-600 dark:hover:text-blue-400"
+          href="/about"
+          className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
         >
-          Categories
+          About
         </Link>
       </nav>
     </header>
