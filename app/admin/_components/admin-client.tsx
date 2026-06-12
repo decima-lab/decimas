@@ -79,6 +79,8 @@ import {
 import type { Role } from "@/lib/auth";
 import type { AdminPost } from "@/lib/posts";
 import { toast } from "@/lib/toast";
+import { cn } from "@/lib/utils";
+import { PostDetailDialog } from "./post-detail-dialog";
 import { PostDialog } from "./post-dialog";
 
 type Category = { id: string; label: string };
@@ -299,6 +301,8 @@ function PostsPanel({
   const [pending, startTransition] = useTransition();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<AdminPost | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [viewingPost, setViewingPost] = useState<AdminPost | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   // ---- Filter + sort + pagination state ----
@@ -394,6 +398,17 @@ function PostsPanel({
   function openEdit(post: AdminPost) {
     setEditingPost(post);
     setDialogOpen(true);
+  }
+
+  function openDetail(post: AdminPost) {
+    setViewingPost(post);
+    setDetailOpen(true);
+  }
+
+  function canEditPost(post: AdminPost): boolean {
+    if (post.is_deleted) return false;
+    const isOwn = post.created_by === currentUser.id;
+    return currentUser.isAdmin || (isOwn && post.status === "draft");
   }
 
   function runAction(action: () => Promise<void>, successMessage: string) {
@@ -508,6 +523,7 @@ function PostsPanel({
                             isAdmin={currentUser.isAdmin}
                             currentUserId={currentUser.id}
                             pending={pending}
+                            onView={openDetail}
                             onEdit={openEdit}
                             onPublish={(id) =>
                               runAction(() => publishPost(id), "Post published")
@@ -550,6 +566,14 @@ function PostsPanel({
         isAdmin={currentUser.isAdmin}
       />
 
+      <PostDetailDialog
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        post={viewingPost}
+        canEdit={viewingPost ? canEditPost(viewingPost) : false}
+        onEdit={openEdit}
+      />
+
       <AlertDialog
         open={pendingDeleteId !== null}
         onOpenChange={(open) => {
@@ -590,6 +614,7 @@ function PostRow({
   isAdmin,
   currentUserId,
   pending,
+  onView,
   onEdit,
   onPublish,
   onUnpublish,
@@ -600,6 +625,7 @@ function PostRow({
   isAdmin: boolean;
   currentUserId: string;
   pending: boolean;
+  onView: (post: AdminPost) => void;
   onEdit: (post: AdminPost) => void;
   onPublish: (id: string) => void;
   onUnpublish: (id: string) => void;
@@ -621,7 +647,8 @@ function PostRow({
   return (
     <TableRow
       data-deleted={post.is_deleted ? "true" : "false"}
-      className={post.is_deleted ? "opacity-50" : undefined}
+      onClick={() => onView(post)}
+      className={cn("cursor-pointer", post.is_deleted && "opacity-50")}
     >
       <TableCell className="font-medium">
         <div className="flex items-center gap-2">
@@ -642,7 +669,7 @@ function PostRow({
       <TableCell>
         <StatusBadge status={post.status} isDeleted={post.is_deleted} />
       </TableCell>
-      <TableCell>
+      <TableCell onClick={(e) => e.stopPropagation()} className="w-[1%]">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button

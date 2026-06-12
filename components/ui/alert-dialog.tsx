@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import * as React from "react";
 import { createPortal } from "react-dom";
 import { Button, type ButtonProps } from "@/components/ui/button";
@@ -53,6 +54,17 @@ function AlertDialog({
       document.body.style.overflow = "";
     };
   }, [open]);
+
+  // Close on client-side route changes so a dialog left open during a
+  // navigation can't leave its overlay stuck over the next page.
+  const pathname = usePathname();
+  const lastPath = React.useRef(pathname);
+  React.useEffect(() => {
+    if (pathname !== lastPath.current) {
+      lastPath.current = pathname;
+      handleOpenChange(false);
+    }
+  }, [pathname, handleOpenChange]);
 
   return (
     <AlertDialogContext.Provider
