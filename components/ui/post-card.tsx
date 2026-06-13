@@ -91,7 +91,7 @@ export function PostCard({
           {(isVerified || isGlobal) && (
             <div className="flex shrink-0 flex-wrap justify-end gap-1.5">
               {isVerified && (
-                <Badge variant="secondary">
+                <Badge variant="success">
                   <CheckCircle2 /> Verified
                 </Badge>
               )}

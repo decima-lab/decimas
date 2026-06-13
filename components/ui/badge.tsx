@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 type BadgeVariant =
   | "default"
   | "secondary"
+  | "success"
   | "destructive"
   | "outline"
   | "ghost"
@@ -12,6 +13,7 @@ type BadgeVariant =
 const variantClasses: Record<BadgeVariant, string> = {
   default: "bg-primary text-primary-foreground",
   secondary: "bg-secondary text-secondary-foreground",
+  success: "bg-success/10 text-success dark:bg-success/20 dark:text-success",
   destructive:
     "bg-destructive/10 text-destructive dark:bg-destructive/20 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40",
   outline: "border-border text-foreground",

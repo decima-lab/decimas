@@ -1,7 +1,23 @@
 "use client";
 
-import { ArrowUpRight, CheckCircle2, Globe, Star } from "lucide-react";
-import { useState } from "react";
+import {
+  ArrowUpRight,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Globe,
+  Loader2,
+  Search as SearchIcon,
+  Star,
+} from "lucide-react";
+import Link from "next/link";
+import {
+  type ReadonlyURLSearchParams,
+  usePathname,
+  useRouter,
+  useSearchParams,
+} from "next/navigation";
+import { useRef, useState, useTransition } from "react";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -10,9 +26,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { PostCard } from "@/components/ui/post-card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { formatCurrency } from "@/lib/currency";
 import { cn } from "@/lib/utils";
+
+const ALL_CATEGORIES = "all";
 
 export type PostListItem = {
   id: string;
@@ -36,36 +62,335 @@ const dateFormatter = new Intl.DateTimeFormat("en-US", {
   day: "numeric",
 });
 
-export function PostsList({ posts }: { posts: PostListItem[] }) {
+export type PostsListProps = {
+  posts: PostListItem[];
+  categories: { id: string; label: string }[];
+  total: number;
+  page: number;
+  pageCount: number;
+};
+
+const SEARCH_DEBOUNCE_MS = 300;
+
+export function PostsList({
+  posts,
+  categories,
+  total,
+  page,
+  pageCount,
+}: PostsListProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
+
+  const currentSearch = searchParams.get("q") ?? "";
+  const currentCategory = searchParams.get("category") ?? ALL_CATEGORIES;
+  const verifiedOnly = searchParams.get("verified") === "1";
+
   const [selected, setSelected] = useState<PostListItem | null>(null);
   const [open, setOpen] = useState(false);
+
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Build a URL from the current params with overrides applied, then navigate.
+  // Any filter change drops the `page` param so results restart at page 1.
+  // Routing inside a transition keeps `isPending` true until the server sends
+  // the next page, which drives the loading state below.
+  function applyParams(updates: Record<string, string | null>) {
+    const params = new URLSearchParams(searchParams.toString());
+    for (const [key, value] of Object.entries(updates)) {
+      if (value === null || value === "") params.delete(key);
+      else params.set(key, value);
+    }
+    params.delete("page");
+    const qs = params.toString();
+    startTransition(() => {
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    });
+  }
+
+  function onSearchChange(value: string) {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      applyParams({ q: value.trim() || null });
+    }, SEARCH_DEBOUNCE_MS);
+  }
+
+  function goToPage(href: string) {
+    startTransition(() => {
+      router.push(href, { scroll: false });
+    });
+  }
 
   function openPost(post: PostListItem) {
     setSelected(post);
     setOpen(true);
   }
 
+  const selectedCategoryLabel =
+    categories.find((c) => c.id === currentCategory)?.label ?? "All categories";
+
   return (
     <>
-      <div className="grid gap-4">
-        {posts.map((post) => (
-          <PostCard
-            key={post.id}
-            label={post.label}
-            category={post.category}
-            link={post.link}
-            logoUrl={post.logoUrl}
-            tags={post.tags}
-            isVerified={post.isVerified}
-            isGlobal={post.isGlobal}
-            createdAt={post.createdAt}
-            onSelect={() => openPost(post)}
-          />
-        ))}
+      <div className="flex items-center justify-between gap-4">
+        <h2 className="text-2xl font-bold">Explore Opportunities</h2>
+        <span className="shrink-0 text-sm text-muted-foreground">
+          {total === 1
+            ? "1 available offer now"
+            : `${total} available offers now`}
+        </span>
       </div>
+
+      <div className="space-y-4">
+        <div className="relative">
+          <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            type="text"
+            defaultValue={currentSearch}
+            onChange={(e) => onSearchChange(e.target.value)}
+            placeholder="Search offer by name or keyword..."
+            className="h-12 pl-10 text-base"
+          />
+        </div>
+
+        <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+          <span className="text-sm font-medium text-muted-foreground">
+            Filters:
+          </span>
+
+          <Select
+            value={currentCategory}
+            onValueChange={(value) =>
+              applyParams({
+                category: value === ALL_CATEGORIES ? null : value,
+              })
+            }
+          >
+            <SelectTrigger className="w-48">
+              <SelectValue>{selectedCategoryLabel}</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_CATEGORIES}>All categories</SelectItem>
+              {categories.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <label className="flex cursor-pointer items-center gap-2">
+            <input
+              type="checkbox"
+              checked={verifiedOnly}
+              onChange={(e) =>
+                applyParams({ verified: e.target.checked ? "1" : null })
+              }
+              className="size-4 cursor-pointer rounded accent-primary"
+            />
+            <span className="text-sm text-foreground">Verified only</span>
+          </label>
+        </div>
+      </div>
+
+      <div className="relative">
+        {isPending && (
+          <div className="absolute inset-0 z-10 flex items-start justify-center pt-12">
+            <div className="flex items-center gap-2 rounded-full bg-popover px-3 py-1.5 text-sm text-muted-foreground shadow-sm ring-1 ring-foreground/10">
+              <Loader2 className="size-4 animate-spin" />
+              Loading…
+            </div>
+          </div>
+        )}
+
+        {posts.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-border py-16 text-center text-muted-foreground">
+            No offers match your search
+          </div>
+        ) : (
+          <div
+            className={cn(
+              "grid gap-4 transition-opacity",
+              isPending && "pointer-events-none opacity-50",
+            )}
+          >
+            {posts.map((post) => (
+              <PostCard
+                key={post.id}
+                label={post.label}
+                category={post.category}
+                link={post.link}
+                logoUrl={post.logoUrl}
+                tags={post.tags}
+                isVerified={post.isVerified}
+                isGlobal={post.isGlobal}
+                createdAt={post.createdAt}
+                onSelect={() => openPost(post)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      <Pagination
+        page={page}
+        pageCount={pageCount}
+        pathname={pathname}
+        searchParams={searchParams}
+        onNavigate={goToPage}
+      />
 
       <PostDetail open={open} onOpenChange={setOpen} post={selected} />
     </>
+  );
+}
+
+type PageItem = { kind: "page"; value: number } | { kind: "gap"; key: string };
+
+// First, last, and the current page ± 1 are always shown; larger gaps collapse
+// into an ellipsis so the control stays compact for long result sets.
+function pageItems(current: number, total: number): PageItem[] {
+  const delta = 1;
+  const visible: number[] = [];
+  for (let i = 1; i <= total; i++) {
+    if (
+      i === 1 ||
+      i === total ||
+      (i >= current - delta && i <= current + delta)
+    )
+      visible.push(i);
+  }
+  const items: PageItem[] = [];
+  let prev = 0;
+  for (const value of visible) {
+    if (prev && value - prev > 1)
+      items.push({ kind: "gap", key: `gap-${prev}-${value}` });
+    items.push({ kind: "page", value });
+    prev = value;
+  }
+  return items;
+}
+
+function Pagination({
+  page,
+  pageCount,
+  pathname,
+  searchParams,
+  onNavigate,
+}: {
+  page: number;
+  pageCount: number;
+  pathname: string;
+  searchParams: ReadonlyURLSearchParams;
+  onNavigate: (href: string) => void;
+}) {
+  if (pageCount <= 1) return null;
+
+  function hrefFor(target: number) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (target <= 1) params.delete("page");
+    else params.set("page", String(target));
+    const qs = params.toString();
+    return qs ? `${pathname}?${qs}` : pathname;
+  }
+
+  return (
+    <nav
+      aria-label="Pagination"
+      className="flex items-center justify-center gap-1 pt-2"
+    >
+      <PageLink
+        href={hrefFor(page - 1)}
+        disabled={page <= 1}
+        ariaLabel="Previous page"
+        onNavigate={onNavigate}
+      >
+        <ChevronLeft className="size-4" />
+      </PageLink>
+
+      {pageItems(page, pageCount).map((item) =>
+        item.kind === "gap" ? (
+          <span
+            key={item.key}
+            className="px-1.5 text-sm text-muted-foreground"
+            aria-hidden="true"
+          >
+            …
+          </span>
+        ) : (
+          <PageLink
+            key={item.value}
+            href={hrefFor(item.value)}
+            active={item.value === page}
+            ariaLabel={`Page ${item.value}`}
+            ariaCurrent={item.value === page}
+            onNavigate={onNavigate}
+          >
+            {item.value}
+          </PageLink>
+        ),
+      )}
+
+      <PageLink
+        href={hrefFor(page + 1)}
+        disabled={page >= pageCount}
+        ariaLabel="Next page"
+        onNavigate={onNavigate}
+      >
+        <ChevronRight className="size-4" />
+      </PageLink>
+    </nav>
+  );
+}
+
+function PageLink({
+  href,
+  active = false,
+  disabled = false,
+  ariaLabel,
+  ariaCurrent = false,
+  onNavigate,
+  children,
+}: {
+  href: string;
+  active?: boolean;
+  disabled?: boolean;
+  ariaLabel?: string;
+  ariaCurrent?: boolean;
+  onNavigate: (href: string) => void;
+  children: React.ReactNode;
+}) {
+  const className = cn(
+    buttonVariants({
+      variant: active ? "default" : "outline",
+      size: "icon-sm",
+    }),
+    "min-w-8 tabular-nums",
+    disabled && "pointer-events-none opacity-50",
+  );
+
+  if (disabled) {
+    return <span className={className}>{children}</span>;
+  }
+
+  // Real anchors keep prefetch and open-in-new-tab working; a plain left click
+  // is intercepted so navigation runs through the transition (loading state).
+  return (
+    <Link
+      href={href}
+      scroll={false}
+      aria-label={ariaLabel}
+      aria-current={ariaCurrent ? "page" : undefined}
+      className={className}
+      onClick={(e) => {
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+        e.preventDefault();
+        onNavigate(href);
+      }}
+    >
+      {children}
+    </Link>
   );
 }
 
@@ -149,7 +474,7 @@ function PostDetail({
                   <Badge variant="outline">{post.category}</Badge>
                 )}
                 {post.isVerified && (
-                  <Badge variant="secondary">
+                  <Badge variant="success">
                     <CheckCircle2 /> Verified
                   </Badge>
                 )}
