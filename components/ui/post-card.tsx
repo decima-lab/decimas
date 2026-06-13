@@ -1,4 +1,5 @@
 import { ArrowUpRight, CheckCircle2, Globe } from "lucide-react";
+import type * as React from "react";
 import { cn } from "@/lib/utils";
 import { Badge } from "./badge";
 import { buttonVariants } from "./button";
@@ -7,13 +8,13 @@ import { Card, CardTitle } from "./card";
 export type PostCardProps = {
   label: string;
   category: string | null;
-  description: string | null;
   link: string | null;
   logoUrl: string | null;
   tags: string[];
   isVerified: boolean;
   isGlobal: boolean;
   createdAt: string;
+  onSelect?: () => void;
 };
 
 const TAG_LIMIT = 4;
@@ -27,13 +28,13 @@ const dateFormatter = new Intl.DateTimeFormat("en-US", {
 export function PostCard({
   label,
   category,
-  description,
   link,
   logoUrl,
   tags,
   isVerified,
   isGlobal,
   createdAt,
+  onSelect,
 }: PostCardProps) {
   // The `is_global` badge already conveys global scope, so drop a redundant
   // "Global" tag from the chip row.
@@ -41,9 +42,30 @@ export function PostCard({
   const visibleTags = chipTags.slice(0, TAG_LIMIT);
   const overflowCount = chipTags.length - visibleTags.length;
 
+  const interactive = onSelect
+    ? {
+        role: "button" as const,
+        tabIndex: 0,
+        onClick: onSelect,
+        onKeyDown: (e: React.KeyboardEvent) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onSelect();
+          }
+        },
+      }
+    : {};
+
   return (
-    <Card className="flex-col gap-4 p-4 sm:flex-row sm:items-center">
-      <div className="size-14 shrink-0 overflow-hidden rounded-lg ring-1 ring-foreground/10">
+    <Card
+      {...interactive}
+      className={cn(
+        "flex-col gap-4 p-4 sm:flex-row sm:items-center",
+        onSelect &&
+          "cursor-pointer transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+      )}
+    >
+      <div className="size-14 shrink-0 overflow-hidden rounded-lg">
         {logoUrl ? (
           // biome-ignore lint/performance/noImgElement: arbitrary external logo URL
           <img
@@ -54,7 +76,7 @@ export function PostCard({
             className="size-full object-cover"
           />
         ) : (
-          <div className="flex size-full items-center justify-center bg-muted text-muted-foreground">
+          <div className="flex size-full items-center justify-center rounded-lg bg-muted text-muted-foreground ring-1 ring-foreground/10">
             <Globe className="size-6" />
           </div>
         )}
@@ -82,12 +104,6 @@ export function PostCard({
           )}
         </div>
 
-        {description && (
-          <p className="line-clamp-2 text-sm text-muted-foreground">
-            {description}
-          </p>
-        )}
-
         {visibleTags.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
             {visibleTags.map((tag) => (
@@ -108,12 +124,13 @@ export function PostCard({
             href={link}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
             className={cn(
               buttonVariants({ variant: "outline", size: "sm" }),
               "w-full sm:w-auto",
             )}
           >
-            Learn More
+            Visit site
             <ArrowUpRight />
           </a>
         )}

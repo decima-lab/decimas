@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { AdminPost } from "./posts";
-import { getAllPosts } from "./posts";
+import { getAllPosts, getPublishedPosts } from "./posts";
 
 type Resp = { data: unknown; error: unknown };
 
@@ -20,6 +20,21 @@ function makeSupabase(
     from: ReturnType<typeof vi.fn>;
     select: ReturnType<typeof vi.fn>;
     outerOrder: ReturnType<typeof vi.fn>;
+  };
+}
+
+function makePublishedSupabase(resp: Resp) {
+  const order = vi.fn().mockResolvedValue(resp);
+  const eqStatus = vi.fn().mockReturnValue({ order });
+  const eqDeleted = vi.fn().mockReturnValue({ eq: eqStatus });
+  const select = vi.fn().mockReturnValue({ eq: eqDeleted });
+  const from = vi.fn().mockReturnValue({ select });
+  return { from, select, eqDeleted, eqStatus, order } as unknown as {
+    from: ReturnType<typeof vi.fn>;
+    select: ReturnType<typeof vi.fn>;
+    eqDeleted: ReturnType<typeof vi.fn>;
+    eqStatus: ReturnType<typeof vi.fn>;
+    order: ReturnType<typeof vi.fn>;
   };
 }
 
@@ -119,6 +134,59 @@ describe("getAllPosts", () => {
       // # THEN
       expect(outerOrder).toHaveBeenCalledWith("status", { ascending: true });
       expect(innerOrder).toHaveBeenCalledWith("label");
+    });
+  });
+});
+
+describe("getPublishedPosts", () => {
+  describe("when Supabase returns rows", () => {
+    it("returns them as posts", async () => {
+      // # GIVEN
+      const mock = makePublishedSupabase({ data: [samplePost], error: null });
+      // # WHEN
+      const result = await getPublishedPosts({ from: mock.from } as never);
+      // # THEN
+      expect(result).toEqual([samplePost]);
+    });
+  });
+
+  describe("when Supabase returns null data", () => {
+    it("returns an empty array", async () => {
+      // # GIVEN
+      const mock = makePublishedSupabase({ data: null, error: null });
+      // # WHEN
+      const result = await getPublishedPosts({ from: mock.from } as never);
+      // # THEN
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe("when Supabase returns an error", () => {
+    it("throws the error message", async () => {
+      // # GIVEN
+      const mock = makePublishedSupabase({
+        data: null,
+        error: { message: "boom" },
+      });
+      // # WHEN / # THEN
+      await expect(
+        getPublishedPosts({ from: mock.from } as never),
+      ).rejects.toThrow("boom");
+    });
+  });
+
+  describe("when called", () => {
+    it("filters to published, non-deleted posts, newest first", async () => {
+      // # GIVEN
+      const mock = makePublishedSupabase({ data: [], error: null });
+      // # WHEN
+      await getPublishedPosts({ from: mock.from } as never);
+      // # THEN
+      expect(mock.eqDeleted).toHaveBeenCalledWith("status", "published");
+      expect(mock.eqStatus).toHaveBeenCalledWith("is_deleted", false);
+      expect(mock.order).toHaveBeenCalledWith("created_at", {
+        ascending: false,
+      });
     });
   });
 });

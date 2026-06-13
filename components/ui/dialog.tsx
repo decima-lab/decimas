@@ -1,6 +1,7 @@
 "use client";
 
 import { XIcon } from "lucide-react";
+import { usePathname } from "next/navigation";
 import * as React from "react";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
@@ -54,6 +55,17 @@ function Dialog({
       document.body.style.overflow = "";
     };
   }, [open]);
+
+  // Close on client-side route changes so a dialog left open during a
+  // navigation can't leave its overlay stuck over the next page.
+  const pathname = usePathname();
+  const lastPath = React.useRef(pathname);
+  React.useEffect(() => {
+    if (pathname !== lastPath.current) {
+      lastPath.current = pathname;
+      handleOpenChange(false);
+    }
+  }, [pathname, handleOpenChange]);
 
   return (
     <DialogContext.Provider value={{ open, onOpenChange: handleOpenChange }}>
