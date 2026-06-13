@@ -56,12 +56,6 @@ export type PostListItem = {
   createdAt: string;
 };
 
-const dateFormatter = new Intl.DateTimeFormat("en-US", {
-  year: "numeric",
-  month: "short",
-  day: "numeric",
-});
-
 export type PostsListProps = {
   posts: PostListItem[];
   categories: { id: string; label: string }[];
@@ -225,7 +219,6 @@ export function PostsList({
                 tags={post.tags}
                 isVerified={post.isVerified}
                 isGlobal={post.isGlobal}
-                createdAt={post.createdAt}
                 onSelect={() => openPost(post)}
               />
             ))}
@@ -450,40 +443,40 @@ function PostDetail({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col overflow-hidden sm:max-w-lg">
         <DialogHeader>
-          <div className="flex items-start gap-3 pr-8">
-            <div className="size-12 shrink-0 overflow-hidden rounded-lg">
-              {post.logoUrl ? (
-                // biome-ignore lint/performance/noImgElement: arbitrary external logo URL
-                <img
-                  src={post.logoUrl}
-                  alt=""
-                  className="size-full object-cover"
-                />
-              ) : (
-                <div className="flex size-full items-center justify-center rounded-lg bg-muted text-muted-foreground ring-1 ring-foreground/10">
-                  <Globe className="size-5" />
-                </div>
-              )}
-            </div>
-            <div className="min-w-0 flex-1 space-y-1.5">
-              <DialogTitle className="text-lg leading-tight">
-                {post.label}
-              </DialogTitle>
-              <div className="flex flex-wrap items-center gap-1.5">
-                {post.category && (
-                  <Badge variant="outline">{post.category}</Badge>
-                )}
-                {post.isVerified && (
-                  <Badge variant="success">
-                    <CheckCircle2 /> Verified
-                  </Badge>
-                )}
-                {post.isGlobal && (
-                  <Badge variant="outline">
-                    <Globe /> Global
-                  </Badge>
+          <div className="space-y-2 pr-8">
+            <div className="flex min-w-0 items-center gap-2">
+              <div className="size-5 shrink-0 overflow-hidden rounded-md">
+                {post.logoUrl ? (
+                  // biome-ignore lint/performance/noImgElement: arbitrary external logo URL
+                  <img
+                    src={post.logoUrl}
+                    alt=""
+                    className="size-full object-cover"
+                  />
+                ) : (
+                  <div className="flex size-full items-center justify-center rounded-md bg-muted text-muted-foreground ring-1 ring-foreground/10">
+                    <Globe className="size-3" />
+                  </div>
                 )}
               </div>
+              <DialogTitle className="min-w-0 text-lg leading-tight">
+                {post.label}
+              </DialogTitle>
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {post.category && (
+                <Badge variant="outline">{post.category}</Badge>
+              )}
+              {post.isVerified && (
+                <Badge variant="success">
+                  <CheckCircle2 /> Verified
+                </Badge>
+              )}
+              {post.isGlobal && (
+                <Badge variant="outline">
+                  <Globe /> Global
+                </Badge>
+              )}
             </div>
           </div>
         </DialogHeader>
@@ -519,13 +512,9 @@ function PostDetail({
               </div>
             </Field>
           )}
-
-          <Field label="Added">
-            {dateFormatter.format(new Date(post.createdAt))}
-          </Field>
         </div>
 
-        <div className="-mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-xl border-t bg-muted/50 p-4 sm:flex-row sm:justify-end">
+        <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
           {post.link && (
             <a
               href={post.link}
@@ -533,7 +522,7 @@ function PostDetail({
               rel="noopener noreferrer"
               className={buttonVariants()}
             >
-              Visit site
+              View offer
               <ArrowUpRight />
             </a>
           )}

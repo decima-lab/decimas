@@ -13,17 +13,10 @@ export type PostCardProps = {
   tags: string[];
   isVerified: boolean;
   isGlobal: boolean;
-  createdAt: string;
   onSelect?: () => void;
 };
 
 const TAG_LIMIT = 4;
-
-const dateFormatter = new Intl.DateTimeFormat("en-US", {
-  year: "numeric",
-  month: "short",
-  day: "numeric",
-});
 
 export function PostCard({
   label,
@@ -33,7 +26,6 @@ export function PostCard({
   tags,
   isVerified,
   isGlobal,
-  createdAt,
   onSelect,
 }: PostCardProps) {
   // The `is_global` badge already conveys global scope, so drop a redundant
@@ -65,26 +57,25 @@ export function PostCard({
           "cursor-pointer transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
       )}
     >
-      <div className="size-14 shrink-0 overflow-hidden rounded-lg">
-        {logoUrl ? (
-          // biome-ignore lint/performance/noImgElement: arbitrary external logo URL
-          <img
-            src={logoUrl}
-            alt=""
-            width={56}
-            height={56}
-            className="size-full object-cover"
-          />
-        ) : (
-          <div className="flex size-full items-center justify-center rounded-lg bg-muted text-muted-foreground ring-1 ring-foreground/10">
-            <Globe className="size-6" />
-          </div>
-        )}
-      </div>
-
       <div className="flex min-w-0 flex-1 flex-col gap-2">
         <div className="flex items-start justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <div className="size-5 shrink-0 overflow-hidden rounded-md">
+              {logoUrl ? (
+                // biome-ignore lint/performance/noImgElement: arbitrary external logo URL
+                <img
+                  src={logoUrl}
+                  alt=""
+                  width={20}
+                  height={20}
+                  className="size-full object-cover"
+                />
+              ) : (
+                <div className="flex size-full items-center justify-center rounded-md bg-muted text-muted-foreground ring-1 ring-foreground/10">
+                  <Globe className="size-3" />
+                </div>
+              )}
+            </div>
             <CardTitle className="text-lg">{label}</CardTitle>
             {category && <Badge variant="outline">{category}</Badge>}
           </div>
@@ -130,13 +121,10 @@ export function PostCard({
               "w-full sm:w-auto",
             )}
           >
-            Visit site
+            View offer
             <ArrowUpRight />
           </a>
         )}
-        <span className="text-xs text-muted-foreground">
-          Added {dateFormatter.format(new Date(createdAt))}
-        </span>
       </div>
     </Card>
   );
