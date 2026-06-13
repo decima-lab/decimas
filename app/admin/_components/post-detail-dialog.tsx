@@ -105,7 +105,7 @@ export function PostDetailDialog({
                   <Badge variant="outline">{post.category.label}</Badge>
                 )}
                 {post.is_verified && (
-                  <Badge variant="secondary">
+                  <Badge variant="success">
                     <CheckCircle2Icon /> Verified
                   </Badge>
                 )}

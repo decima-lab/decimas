@@ -11,7 +11,7 @@ export function Footer() {
           <div>
             <Logo />
             <p className="mt-2 text-sm text-muted-foreground">
-              Discover the best online earning opportunities
+              Discover the best opportunities for spare cash
             </p>
           </div>
           <Link
