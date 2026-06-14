@@ -88,7 +88,6 @@ export function Logo(props: LogoProps) {
         className="flex items-center gap-2.5"
       >
         <LogoMark />
-        {/* <LogoWordmark /> */}
       </Link>
     );
   }
@@ -96,7 +95,6 @@ export function Logo(props: LogoProps) {
   return (
     <span className="flex items-center gap-2.5">
       <LogoMark />
-      {/* <LogoWordmark /> */}
     </span>
   );
 }
