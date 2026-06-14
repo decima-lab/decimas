@@ -1,4 +1,8 @@
+"use client";
+
 import Link from "next/link";
+import Image from "next/image";
+import { useEffect, useState } from "react";
 
 const LOGO_VARIANTS = {
   TEXT: "text",
@@ -13,42 +17,58 @@ interface LogoProps {
 
 const appName = process.env.NEXT_PUBLIC_APP_NAME ?? "Decimas";
 
-// "One of ten" mark: ten coins in a ring (decimas = a tenth), with the top one
-// lit in the brand accent. Coordinates lifted from design/logos-refined.html.
-// The nine coins inherit the text colour (foreground) so the mark flips for
-// dark mode; the tenth uses the emerald `--primary`.
-const COIN_DOTS: { cx: number; cy: number; accent?: boolean }[] = [
-  { cx: 20, cy: 6, accent: true },
-  { cx: 28.23, cy: 8.67 },
-  { cx: 33.31, cy: 15.67 },
-  { cx: 33.31, cy: 24.33 },
-  { cx: 28.23, cy: 31.33 },
-  { cx: 20, cy: 34 },
-  { cx: 11.77, cy: 31.33 },
-  { cx: 6.69, cy: 24.33 },
-  { cx: 6.69, cy: 15.67 },
-  { cx: 11.77, cy: 8.67 },
-];
+// Light theme logo
+function LogoMarkLight() {
+  return (
+    <Image
+      src="/logo-dark.svg"
+      alt={appName}
+      height={32}
+      width={120}
+      style={{objectFit: "contain"}}
+    />
+  );
+}
+
+// Dark theme logo
+function LogoMarkDark() {
+  return (
+    <Image
+      src="/logo-light.svg"
+      alt={appName}
+      height={32}
+      width={120}
+      style={{objectFit: "contain"}}
+    />
+  );
+}
 
 function LogoMark() {
-  return (
-    <svg
-      viewBox="0 0 40 40"
-      className="size-8 shrink-0"
-      role="img"
-      aria-label={appName}
-    >
-      {COIN_DOTS.map((dot) => (
-        <circle
-          key={`${dot.cx}-${dot.cy}`}
-          cx={dot.cx}
-          cy={dot.cy}
-          r={2.1}
-          className={dot.accent ? "fill-primary" : "fill-foreground"}
-        />
-      ))}
-    </svg>
-  );
+  const [isDark, setIsDark] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    // Check for dark mode preference
+    const isDarkMode = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    setIsDark(isDarkMode);
+
+    // Listen for theme changes
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const handleChange = (e: MediaQueryListEvent) => {
+      setIsDark(e.matches);
+    };
+
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, []);
+
+  // Avoid hydration mismatch by not rendering until mounted
+  if (!mounted) {
+    return null;
+  }
+
+  return isDark ? <LogoMarkDark /> : <LogoMarkLight />;
 }
 
 function LogoWordmark() {
@@ -68,7 +88,7 @@ export function Logo(props: LogoProps) {
         className="flex items-center gap-2.5"
       >
         <LogoMark />
-        <LogoWordmark />
+        {/* <LogoWordmark /> */}
       </Link>
     );
   }
@@ -76,7 +96,7 @@ export function Logo(props: LogoProps) {
   return (
     <span className="flex items-center gap-2.5">
       <LogoMark />
-      <LogoWordmark />
+      {/* <LogoWordmark /> */}
     </span>
   );
 }
