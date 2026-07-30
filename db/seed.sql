@@ -184,5 +184,6 @@ on conflict do nothing;
 
 -- Admin user (project-specific — update UUID when setting up a new environment)
 insert into user_roles (user_id, role) values
-  ('900fbe1b-f478-4dbb-b32c-eec8d861fbe8', 'admin')
+  ('900fbe1b-f478-4dbb-b32c-eec8d861fbe8', 'admin'),
+  ('ce9d1583-0c45-4e4d-8777-d1c6ee263e4e', 'admin')
 on conflict do nothing;

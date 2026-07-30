@@ -358,11 +358,11 @@ create policy "users can delete own vote" on post_vote for delete using ((select
 
 -- -----------------------------------------------------------------------------
 -- user_roles
--- Users can only see their own role. Only admins can grant/revoke roles.
+-- Users can see their own role; admins can see everyone's. Only admins can grant/revoke roles.
 -- -----------------------------------------------------------------------------
 alter table user_roles enable row level security;
 
-create policy "users can read own role"    on user_roles for select using ((select auth.uid()) = user_id);
+create policy "read user_roles" on user_roles for select using ((select auth.uid()) = user_id or private.is_admin());
 create policy "admins can insert user_roles" on user_roles for insert with check (private.is_admin());
 create policy "admins can update user_roles" on user_roles for update using (private.is_admin());
 create policy "admins can delete user_roles" on user_roles for delete using (private.is_admin());
